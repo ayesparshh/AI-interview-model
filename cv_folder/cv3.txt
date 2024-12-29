@@ -1,0 +1,40 @@
+# cv3.txt
+Contact Information:
+
+Name: Charlie Davis
+Email: charlie.davis@email.com
+Phone: (555) 111-2222
+LinkedIn: linkedin.com/in/charliedavisdev
+
+Summary:
+
+Recent graduate with a strong foundation in computer science principles and a keen interest in software development. Eager to learn and contribute to a dynamic team. Familiar with various programming languages and development methodologies.
+
+Experience:
+
+Software Development Intern | SummerTech Co. | Summer 2022
+* Assisted senior developers in coding and testing software modules.
+* Gained experience with Python and basic database concepts.
+* Participated in team meetings and learned about the software development lifecycle.
+
+Technical Support Assistant | University IT Department | 2020 - 2022
+* Provided technical assistance to students and faculty.
+* Developed basic scripts to automate routine tasks.
+
+Education:
+
+Bachelor of Science in Computer Science | University of Example | 2023
+
+Skills:
+
+* Programming Languages: Python, C++, JavaScript
+* Databases: SQL (basic)
+* Version Control: Git
+* Operating Systems: Windows, Linux
+* Problem Solving
+* Communication Skills
+* Teamwork
+
+Projects:
+
+Simple Task Manager (Python) - Developed a command-line task management application using Python.

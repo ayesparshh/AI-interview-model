@@ -58,15 +58,14 @@ async def match_multiple_jobs(
 def extract_candidate_name(cv_text: str) -> str:
     """Extract candidate name from CV text"""
     try:
-        # Remove common headers
         cleaned_text = cv_text.replace("Last Updated on", "").replace("Last Upda ted on", "")
-        # Split by common delimiters
+        
         lines = [line.strip() for line in cleaned_text.split('\n') if line.strip()]
-        # Look for the first line that doesn't contain a date
-        for line in lines[:3]:  # Check first 3 lines
-            # Skip lines with dates or common headers
+       
+        for line in lines[:3]:
+            
             if not any(x in line.lower() for x in ['updated', 'date:', '202']):
-                return line[:50]  # Limit length
+                return line[:50]
         return "Unknown Candidate"
     except:
         return "Unknown Candidate"
@@ -74,10 +73,8 @@ def extract_candidate_name(cv_text: str) -> str:
 def parse_match_percentage(response_text: str) -> str:
     """Parse and validate match percentage"""
     try:
-        # Find any line containing MATCH_PERCENTAGE
         for line in response_text.split('\n'):
             if 'MATCH_PERCENTAGE:' in line:
-                # Extract only numbers
                 number = ''.join(c for c in line.split(':')[1].strip() if c.isdigit())
                 if number:
                     percentage = int(number)
@@ -91,9 +88,8 @@ def parse_match_percentage(response_text: str) -> str:
 def extract_email(cv_text: str) -> str:
     """Extract email from CV text"""
     try:
-        # Common email regex pattern
         email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-        matches = re.findall(email_pattern, cv_text.replace(' ', ''))  # Remove spaces before matching
+        matches = re.findall(email_pattern, cv_text.replace(' ', ''))
         return matches[0] if matches else "No email found"
     except:
         return "No email found"
@@ -126,7 +122,7 @@ async def match_multiple_candidates(
             match_percentage = parse_match_percentage(completion.choices[0].message.content)
             candidates_matches.append(CandidateMatch(
                 candidate_id=str(len(candidates_matches) + 1),
-                candidate_name=candidate_email,  # Use email instead of full name
+                candidate_name=candidate_email,
                 match_score=match_percentage,
                 cv_filename=cv_file.filename
             ))

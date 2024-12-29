@@ -86,9 +86,14 @@ class AnswerScoringResponse(BaseModel):
 
 class CandidateMatch(BaseModel):
     candidate_id: str
-    candidate_name: str  # Added field
+    candidate_name: str
     match_score: str
-    cv_filename: str    # Added field
+    cv_filename: str
 
 class MultipleCandidateMatchResponse(BaseModel):
     matches: list[CandidateMatch]
+
+class QuestionGenerateRequest(BaseModel):
+    cv: str
+    jobDescription: str
+    count: int = 3    

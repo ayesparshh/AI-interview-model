@@ -1,0 +1,42 @@
+# job_description.txt
+Job Title: Software Engineer
+
+Company: Tech Solutions Inc.
+
+Location: Remote
+
+We are looking for a talented and passionate Software Engineer to join our growing team. As a Software Engineer, you will be responsible for designing, developing, and maintaining high-quality software solutions. You will work collaboratively with other engineers, product managers, and designers to deliver innovative products that meet our users' needs.
+
+Responsibilities:
+
+* Design and develop scalable and robust software applications using Python and Java.
+* Write clean, well-documented, and testable code.
+* Participate in code reviews and ensure code quality.
+* Collaborate with frontend engineers to integrate APIs and build user interfaces.
+* Deploy and maintain applications on cloud platforms like AWS.
+* Troubleshoot and resolve software defects and issues.
+* Participate in agile development processes, including sprint planning, daily stand-ups, and retrospectives.
+* Stay up-to-date with the latest technologies and industry trends.
+
+Qualifications:
+
+* Bachelor's degree in Computer Science or a related field.
+* 3+ years of professional software development experience.
+* Strong proficiency in Python and Java.
+* Experience with RESTful API design and development.
+* Familiarity with cloud platforms, particularly AWS.
+* Experience with relational databases (e.g., PostgreSQL, MySQL) and SQL.
+* Understanding of software development best practices and design patterns.
+* Excellent problem-solving and communication skills.
+* Experience with version control systems (e.g., Git).
+
+Bonus Points:
+
+* Experience with JavaScript frameworks like React or Angular.
+* Experience with containerization technologies like Docker and Kubernetes.
+* Experience with CI/CD pipelines.
+* Contributions to open-source projects.
+
+To Apply:
+
+Please submit your resume and cover letter to careers@techsolutionsinc.com.

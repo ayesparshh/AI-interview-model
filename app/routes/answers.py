@@ -5,6 +5,7 @@ from ..models import AnswerPair, AnswerScore, AnswerScoringResponse
 from ..prompts import ANSWER_SCORING_PROMPT
 from app.config import client
 # uvicorn app.main:app --reload
+# python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 router = APIRouter()
 
 class ScoringRequest(BaseModel):

@@ -1,0 +1,45 @@
+# cv1.txt
+Contact Information:
+
+Name: Alice Smith
+Email: alice.smith@email.com
+Phone: (555) 123-4567
+LinkedIn: linkedin.com/in/alicesmith
+
+Summary:
+
+Highly motivated and results-oriented Software Engineer with 5+ years of experience in designing, developing, and deploying scalable web applications using Python and Java. Proven ability to work effectively in agile teams and deliver high-quality solutions. Expertise in cloud technologies, particularly AWS, and strong proficiency in building RESTful APIs.
+
+Experience:
+
+Senior Software Engineer | Tech Innovators Corp. | 2018 - Present
+* Designed and developed key features for a flagship product using Python (Django framework) and Java (Spring Boot).
+* Implemented RESTful APIs for seamless integration with frontend applications built in React.
+* Deployed and managed applications on AWS using services like EC2, S3, and RDS (PostgreSQL).
+* Led code reviews and mentored junior engineers, ensuring adherence to coding standards.
+* Successfully migrated legacy systems to a microservices architecture on Kubernetes.
+
+Software Engineer | Global Solutions Ltd. | 2016 - 2018
+* Developed and maintained enterprise-level Java applications for financial clients.
+* Worked with relational databases (MySQL) and wrote complex SQL queries.
+* Participated in agile development sprints and contributed to all stages of the software development lifecycle.
+
+Education:
+
+Master of Science in Computer Science | University of California, Berkeley | 2016
+Bachelor of Science in Computer Science | Stanford University | 2014
+
+Skills:
+
+* Programming Languages: Python, Java, JavaScript, SQL
+* Frameworks/Libraries: Django, Spring Boot, React
+* Cloud Platforms: AWS (EC2, S3, RDS, Lambda)
+* Databases: PostgreSQL, MySQL
+* DevOps: Docker, Kubernetes, CI/CD
+* Version Control: Git
+* Methodologies: Agile (Scrum)
+* API Design: RESTful
+
+Projects:
+
+Personal Portfolio Website (Python, Flask, AWS S3) - Developed and deployed a personal portfolio website showcasing my skills and projects.
