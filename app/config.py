@@ -1,7 +1,9 @@
-from openai import OpenAI
+import os
+from mistralai import Mistral
 
-XAI_API_KEY = "xai-bDQHyZKnMNcSnDz2ARt0FF5kCEahZd40JYEls5Ty3NCJp4G1mjEWf1WK5GmhGnP3qrGuUK7rpifqZGVX"
-client = OpenAI(
-    api_key=XAI_API_KEY,
-    base_url="https://api.x.ai/v1",
+MISTRAL_API_KEY = "omgMZB6SpQcMsqYzPsju1HSGrYKjVSPg"
+client = Mistral(
+    api_key=MISTRAL_API_KEY
 )
+
+model = "mistral-large-latest"

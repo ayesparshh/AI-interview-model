@@ -1,36 +1,20 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
-from typing import List, Dict
+from typing import List, Dict, Optional
 import json
 import logging
 from pydantic import BaseModel
-from ..models import QuestionGenerationResponse, QuestionWithTime
-from ..prompts import QUESTION_GENERATION_PROMPT
-from app.config import client
-from .cv_matching import extract_pdf_text
+from ..models import (
+    QuestionGenerationResponse, 
+    QuestionWithTime,
+    QuestionWithDifficulty,
+    FollowUpQuestionRequest
+)
+from ..prompts import QUESTION_GENERATION_PROMPT, FOLLOW_UP_QUESTION_PROMPT
+from app.config import client, model
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-def chunk_text(text: str, max_length: int = 1000) -> List[str]:
-    """Split text into chunks for processing"""
-    words = text.split()
-    chunks = []
-    current_chunk = []
-    current_length = 0
-    
-    for word in words:
-        if current_length + len(word) > max_length:
-            chunks.append(' '.join(current_chunk))
-            current_chunk = [word]
-            current_length = len(word)
-        else:
-            current_chunk.append(word)
-            current_length += len(word) + 1
-            
-    if current_chunk:
-        chunks.append(' '.join(current_chunk))
-    return chunks
 
 def clean_json_string(content: str) -> str:
     """Clean and prepare string for JSON parsing"""
@@ -77,81 +61,6 @@ Example valid question structures:
 - Walk through your approach to implementing X
 """
 
-def convert_text_to_json(content: str) -> str:
-    """Convert text format to JSON if needed"""
-    if content.strip().startswith('{'):
-        return content
-        
-    questions = []
-    current_question = None
-    current_time = None
-    
-    for line in content.split('\n'):
-        line = line.strip()
-        if not line or line == '---':
-            if current_question and current_time:
-                questions.append({
-                    "question": current_question,
-                    "time_minutes": current_time
-                })
-                current_question = None
-                current_time = None
-            continue
-            
-        if "QUESTION:" in line:
-            current_question = line.split("QUESTION:", 1)[1].strip()
-        elif "TIME:" in line:
-            try:
-                time_str = line.split("TIME:", 1)[1].strip()
-                current_time = int(float(time_str))
-                current_time = min(max(current_time, 2), 6)
-            except:
-                current_time = 4
-                
-    if current_question and current_time:
-        questions.append({
-            "question": current_question,
-            "time_minutes": current_time
-        })
-        
-    return json.dumps({"questions": questions})
-
-def parse_llm_response(content: str) -> List[QuestionWithTime]:
-    """Parse LLM response with better error handling"""
-    try:
-        json_str = clean_json_string(content)
-        
-        data = json.loads(json_str)
-        
-        if not isinstance(data, dict) or "questions" not in data:
-            raise ValueError("Invalid response structure")
-            
-        questions = []
-        for q in data.get("questions", []):
-            if not isinstance(q, dict):
-                continue
-                
-            question = q.get("question", "").strip()
-            time_minutes = q.get("time_minutes", 4)
-            
-            if not question:
-                continue
-                
-            if not isinstance(time_minutes, (int, float)):
-                time_minutes = 4
-            time_minutes = min(max(int(time_minutes), 2), 6)
-            
-            questions.append(QuestionWithTime(
-                question=question,
-                estimated_time_minutes=time_minutes
-            ))
-            
-        return questions
-        
-    except Exception as e:
-        print(f"Failed to parse response: {str(e)}\nContent: {content}")
-        return parse_llm_response_text(content)
-
 def parse_llm_response_text(content: str) -> list[QuestionWithTime]:
     questions = []
     current_question = None
@@ -194,9 +103,7 @@ class QuestionGenerationRequest(BaseModel):
     count: int = 3
 
 @router.post("/generate-questions", response_model=QuestionGenerationResponse)
-async def generate_questions(
-    request: QuestionGenerationRequest = Body(...)
-):
+async def generate_questions(request: QuestionGenerationRequest = Body(...)):
     """Generates interview questions based on CV and job description."""
     try:
         tech_context = f"""
@@ -210,8 +117,8 @@ async def generate_questions(
         and the job requirements ({request.job_description}).
         """
 
-        completion = client.chat.completions.create(
-            model="grok-beta",
+        completion = client.chat.complete(
+            model=model,
             messages=[
                 {
                     "role": "system",
@@ -222,9 +129,7 @@ async def generate_questions(
                     "role": "user",
                     "content": create_structured_prompt(tech_context, "software engineering", request.count)
                 }
-            ],
-            temperature=0.7,
-            max_tokens=2000
+            ]
         )
 
         response_content = completion.choices[0].message.content
@@ -244,20 +149,10 @@ async def generate_questions(
             questions = parse_llm_response_text(response_content)[:request.count]
         
         if not questions:
-            questions = [
-                QuestionWithTime(
-                    question="Explain your experience with React.js and how you've used it in previous projects",
-                    estimated_time_minutes=5
-                ),
-                QuestionWithTime(
-                    question="Describe how you would design a scalable Node.js backend service",
-                    estimated_time_minutes=6
-                ),
-                QuestionWithTime(
-                    question="Walk through your approach to implementing authentication in a full-stack application",
-                    estimated_time_minutes=4
-                )
-            ][:request.count]
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate valid questions from AI"
+            )
             
         return QuestionGenerationResponse(questions=questions)
             
@@ -268,109 +163,84 @@ async def generate_questions(
             detail="Failed to generate interview questions"
         )
 
-
-
-# @router.post("/generate-questions", response_model=QuestionGenerationResponse)
-# async def generate_questions(
-#     cv_file: UploadFile = File(...),
-#     job_description: str = Form(...),
-#     previous_questions: str = Form(...),
-#     num_questions: int = Form(...)
-# ):
-#     try:
-#         pdf_content = await cv_file.read()
-#         cv_text = extract_pdf_text(pdf_content)
+def parse_follow_up_response(content: str) -> dict:
+    """Clean and parse LLM response into structured format"""
+    try:
+        content = ' '.join(content.split())
         
-#         cv_num = num_questions // 2
-#         jd_num = num_questions - cv_num
-        
-#         cv_chunks = chunk_text(cv_text)
-#         jd_chunks = chunk_text(job_description)
-        
-#         cv_questions = []
-#         jd_questions = []
-#         max_retries = 3
-        
-#         for chunk in cv_chunks:
-#             if len(cv_questions) >= cv_num:
-#                 break
-                
-#             for attempt in range(max_retries):
-#                 try:
-#                     cv_completion = client.chat.completions.create(
-#                         model="grok-beta",
-#                         messages=[
-#                             {
-#                                 "role": "system",
-#                                 "content": """You are an expert technical interviewer. 
-#                                 You MUST return only valid JSON matching the specified format.
-#                                 Do not include any other text or explanations."""
-#                             },
-#                             {
-#                                 "role": "user",
-#                                 "content": create_structured_prompt(
-#                                     chunk,
-#                                     "cv",
-#                                     min(cv_num - len(cv_questions), 2)
-#                                 )
-#                             }
-#                         ],
-#                         temperature=0.5,
-#                         max_tokens=1000,
-#                     )
-                    
-#                     response_content = cv_completion.choices[0].message.content.strip()
-#                     new_questions = parse_llm_response(response_content)
-                    
-#                     if new_questions:
-#                         cv_questions.extend(new_questions)
-#                         break
-                    
-#                 except Exception as e:
-#                     print(f"CV chunk processing attempt {attempt + 1} failed: {str(e)}")
-#                     continue
-
-#         for chunk in jd_chunks:
-#             if len(jd_questions) >= jd_num:
-#                 break
-                
-#             for attempt in range(max_retries):
-#                 try:
-#                     jd_completion = client.chat.completions.create(
-#                         model="grok-beta",
-#                         messages=[
-#                             {
-#                                 "role": "system",
-#                                 "content": "You are an expert technical interviewer. Output MUST be valid JSON."
-#                             },
-#                             {
-#                                 "role": "user",
-#                                 "content": create_structured_prompt(
-#                                     chunk,
-#                                     "jd",
-#                                     min(jd_num - len(jd_questions), 3)
-#                                 )
-#                             }
-#                         ],
-#                         temperature=0.7,
-#                         max_tokens=1500,
-#                     )
-                    
-#                     new_questions = parse_llm_response(jd_completion.choices[0].message.content)
-#                     jd_questions.extend(new_questions)
-#                     break
-#                 except Exception as e:
-#                     print(f"JD chunk processing attempt {attempt + 1} failed: {str(e)}")
-
-#         questions = cv_questions[:cv_num] + jd_questions[:jd_num]
-#         if not questions:
-#             raise HTTPException(
-#                 status_code=500,
-#                 detail="Failed to generate any valid questions. Please try again."
-#             )
+        json_pattern = r'\{.*\}'
+        import re
+        match = re.search(json_pattern, content)
+        if not match:
+            raise ValueError("No JSON object found in response")
             
-#         return QuestionGenerationResponse(questions=questions[:num_questions])
+        json_str = match.group(0)
         
-#     except Exception as e:
-#         print(f"Error generating questions: {str(e)}")
-#         raise HTTPException(status_code=500, detail=str(e))
+        data = json.loads(json_str)
+        
+        return {
+            "question": str(data.get("question", "")).strip(),
+            "estimated_time_minutes": min(max(int(data.get("time_minutes", 5)), 3), 6),
+            "difficulty_increase": str(data.get("difficulty_increase", "significant")),
+            "related_concepts": list(data.get("related_concepts", []))[:3]
+        }
+    except Exception as e:
+        logger.error(f"Parse error details: {str(e)}\nRaw content: {content}")
+        raise
+
+class FollowUpQuestionRequest(BaseModel):
+    original_question: str
+    provided_answer: str
+
+class SimpleQuestionResponse(BaseModel):
+    question: str
+    estimated_time_minutes: int
+
+@router.post("/generate-follow-up", response_model=SimpleQuestionResponse)
+async def generate_follow_up(request: FollowUpQuestionRequest = Body(...)):
+    """Generates a follow-up question based on original question and answer."""
+    try:
+        system_prompt = """You are an expert technical interviewer. You must respond with ONLY a valid JSON object.
+Format:
+{
+    "question": "Your detailed technical follow-up question here",
+    "time_minutes": 5
+}"""
+
+        user_prompt = f"""Based on:
+Original Question: {request.original_question}
+Candidate Answer: {request.provided_answer}
+
+Generate a more challenging follow-up question that delves deeper into the technical aspects."""
+
+        completion = client.chat.complete(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+
+        response_text = completion.choices[0].message.content
+        logger.debug(f"Raw LLM response: {response_text}")
+
+        try:
+            clean_json = clean_json_string(response_text)
+            data = json.loads(clean_json)
+            return SimpleQuestionResponse(
+                question=data["question"],
+                estimated_time_minutes=min(max(int(data.get("time_minutes", 5)), 3), 6)
+            )
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Failed to parse response: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate valid follow-up question"
+            )
+
+    except Exception as e:
+        logger.error(f"Error in follow-up generation: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate follow-up question: {str(e)}"
+        )

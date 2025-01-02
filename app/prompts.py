@@ -1,63 +1,3 @@
-CV_ANALYSIS_PROMPT = """
-You are a CV analyzer. Analyze this CV against the job requirements and provide a STRICT response in this format:
-
-MATCH_PERCENTAGE: [ONLY a number 0-100, no text]
-
-Example correct format:
-MATCH_PERCENTAGE: 75
-
-SKILLS_ANALYSIS:
-| Requirement | Expectation | Match Status |
-|------------|-------------|--------------|
-{requirements_table}
-
-APPLICATION DETAILS:
-| Category | Details |
-|----------|---------|
-| Mandatory Skills | Skill 1: {application_data[mandatory_skill_1]}
-| | Skill 2: {application_data[mandatory_skill_2]}
-| | Skill 3: {application_data[mandatory_skill_3]}
-| | Skill 4: {application_data[mandatory_skill_4]}
-| | Skill 5: {application_data[mandatory_skill_5]}
-| Preferred Skills | {application_data[preferred_skills]}
-| Current Address | {application_data[current_address]}
-| Expected Salary | {application_data[expected_salary]}
-| Notice Period | {application_data[notice_period]} months
-
-KEY_FINDINGS:
-| Category | Status | Details |
-|----------|--------|---------|
-| Experience Level | [Match/Partial/No Match] | [Details] |
-| Language Skills | [Match/Partial/No Match] | [Level Found] |
-| Location Compatibility | [Match/Partial/No Match] | [Distance & Travel Time] |
-| Work Model | [Match/Partial/No Match] | [Remote/Hybrid/Onsite] |
-
-SUMMARY:
-- [Top 3 strengths]
-- [Top 3 gaps]
-- [Final recommendation]
-
-CV: {cv_text}
-Job Description: {job_description}
-"""
-
-MULTIPLE_JOBS_ANALYSIS_PROMPT = """
-Provide a structured match analysis in following format:
-
-MATCH_PERCENTAGE: [percentage]
-
-| Category | Match Status |
-|----------|-------------|
-| Required Skills | [percentage] |
-| Experience Level | [percentage] |
-| Location Fit | [percentage] |
-| Overall Fit | [percentage] |
-
-Job Title: {job_title}
-CV: {cv_text}
-Job Description: {job_description}
-"""
-
 QUESTION_GENERATION_PROMPT = """
 Based on the CV and job description, generate exactly {n} UNIQUE and DIVERSE technical interview questions.
 Each question must focus on a DIFFERENT aspect of the candidate's experience or skills.
@@ -115,24 +55,58 @@ Scoring criteria:
 - Practical application (0-2 points)
 """
 
-MULTIPLE_CANDIDATES_ANALYSIS_PROMPT = """
-You are an AI CV analyzer. Based on the following CV and job description, calculate the match percentage.
+JOB_MATCH_ANALYSIS_PROMPT = """
+Analyze this job match with emphasis on transferable skills.
+IMPORTANT: Base score starts at 85% when experience matches.
 
-CV Text:
-{cv_text}
+Consider these transferable skill mappings:
+- Any backend language → other backend tasks
+- Cloud platforms → infrastructure knowledge
+- API development → general backend expertise
+- Database experience → any data storage
 
-Job Description:
-{job_description}
+Job Requirements:
+Title: {title}
+Description: {description}
+Required Skills: {skills}
+Required Experience: {experience}
 
-You MUST respond EXACTLY in this format:
-MATCH_PERCENTAGE: [number]
+Candidate Details:
+Technical Skills: {candidate_skills}
+Experience Level: {candidate_experience}
+Notice Period: {notice_period}
+Expected Salary: {salary}
 
-For example:
-MATCH_PERCENTAGE: 75
+Provide match percentages (minimum 85% for experience matches).
+Focus on skill transferability and potential.
+"""
 
-Rules:
-1. Provide ONLY a number between 0 and 100
-2. Do NOT include any % symbol
-3. Do NOT include any additional text or explanation
-4. The number should reflect the overall match between CV and job requirements
+FOLLOW_UP_QUESTION_PROMPT = """
+Based on this previous question and answer, generate a significantly more challenging follow-up question.
+
+Original Question: {original_question}
+Candidate's Answer: {provided_answer}
+Topic Area: {topic_area}
+Current Difficulty: {difficulty_level}
+
+REQUIREMENTS:
+1. Question MUST be technically more complex and build upon mentioned concepts
+2. For caching-related questions, specifically explore:
+   - Distributed caching architectures and patterns
+   - Cache coherency and consistency challenges
+   - Advanced cache invalidation strategies
+   - Cache failure scenarios and recovery mechanisms
+   - Cache warming and pre-population strategies
+   - Memory optimization and eviction policies
+   - Multi-level caching architectures
+3. Focus on edge cases and system design implications
+4. Challenge architectural decisions with scale considerations
+
+Return in this JSON format:
+{
+    "question": "Your detailed follow-up question",
+    "time_minutes": number between 3-6,
+    "difficulty_increase": "significant",
+    "related_concepts": ["concept1", "concept2", "concept3"]
+}
 """

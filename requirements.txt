@@ -3,3 +3,7 @@ numpy
 requests
 retry
 pathlib
+fastapi
+uvicorn
+python-multipart
+PyPDF2

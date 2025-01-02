@@ -19,24 +19,20 @@ async def score_answers(
     try:
         scores = []
         for answer_pair in request.answers:
-            completion = client.chat.completions.create(
-                model="grok-beta",
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": "You are an expert technical interviewer. Score answers based on completeness, accuracy, clarity, and practical application."
-                    },
-                    {
-                        "role": "user", 
-                        "content": ANSWER_SCORING_PROMPT.format(
-                            question=answer_pair.question,
-                            answer=answer_pair.answer,
-                            job_description=request.job_description
-                        )
-                    }
-                ],
-                temperature=0.7
-            )
+            completion = client.chat.complete(
+    model=model,  # from config.py
+    messages=[
+        {
+            "role": "system",
+            "content": """You are an expert technical interviewer specializing in software engineering.
+            Always return responses in valid JSON format matching the specified structure."""
+        },
+        {
+            "role": "user",
+            "content": create_structured_prompt(tech_context, "software engineering", request.count)
+        }
+    ]
+)
             
             response_text = completion.choices[0].message.content
             score, feedback = parse_scoring_response(response_text)

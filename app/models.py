@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class ChatRequest(BaseModel):
     message: str
@@ -64,11 +64,11 @@ class JobApplicationForm(BaseModel):
     expected_salary: str
     notice_period: int
 
-class QuestionWithTime(BaseModel):
+class QuestionWithTime(BaseModel): #use
     question: str
     estimated_time_minutes: int
 
-class QuestionGenerationResponse(BaseModel):
+class QuestionGenerationResponse(BaseModel): #use
     questions: List[QuestionWithTime]
 
 class AnswerPair(BaseModel):
@@ -96,4 +96,16 @@ class MultipleCandidateMatchResponse(BaseModel):
 class QuestionGenerateRequest(BaseModel):
     cv: str
     jobDescription: str
-    count: int = 3    
+    count: int = 3
+
+class QuestionWithDifficulty(BaseModel):
+    question: str
+    estimated_time_minutes: int
+    difficulty_increase: str
+    related_concepts: List[str]
+
+class FollowUpQuestionRequest(BaseModel):
+    original_question: str
+    provided_answer: str
+    topic_area: Optional[str] = None
+    difficulty_level: str = "moderate"
