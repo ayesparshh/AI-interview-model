@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import json
 import logging
 from pydantic import BaseModel
@@ -98,20 +98,20 @@ def parse_llm_response_text(content: str) -> list[QuestionWithTime]:
     
     return questions
 
-class QuestionGenerationRequest(BaseModel):
-    cvParsedData: str 
-    skillDescriptionMap: Dict[str, str]
-    job: JobData
-    previousQuestions: List[Dict[str, str]] = []
-    expectedQuestionsConfig: List[Dict[str, Any]]
-
 class JobData(BaseModel):
     title: str
     objective: str
     goals: str 
     jobDescription: str
     skills: List[str]
-    experienceRequired: int
+    experienceRequired: int   
+
+class QuestionGenerationRequest(BaseModel):
+    cvParsedData: str 
+    skillDescriptionMap: Dict[str, str]
+    job: JobData
+    previousQuestions: List[Dict[str, str]] = []
+    expectedQuestionsConfig: List[Dict[str, Any]]
 
 @router.post("/generate-questions", response_model=QuestionGenerationResponse)
 async def generate_questions(request: QuestionGenerationRequest = Body(...)):

@@ -7,8 +7,8 @@ from retry import retry
 import logging
 import json
 from datetime import datetime
-from app.db.database import SessionLocal
-from app.db.models import DocumentEmbedding
+# from app.db.database import SessionLocal
+# from app.db.models import DocumentEmbedding
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from typing import List, Dict

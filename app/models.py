@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from sqlalchemy import Column, Integer, String, Float, DateTime, ARRAY
-from sqlalchemy.sql import func
+# from sqlalchemy import Column, Integer, String, Float, DateTime, ARRAY
+# from sqlalchemy.sql import func
 from .database import Base
 
 class DocumentEmbedding(Base):
