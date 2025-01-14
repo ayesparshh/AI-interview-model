@@ -20,6 +20,8 @@ class TopicArea(str, Enum):
 class QuestionWithTime(BaseModel):
     question: str
     estimated_time_minutes: int
+    category: str
+    sequenceNumber: int
 
 class QuestionGenerationResponse(BaseModel):
     questions: List[QuestionWithTime]
