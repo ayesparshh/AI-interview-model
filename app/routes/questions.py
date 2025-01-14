@@ -34,7 +34,7 @@ def create_structured_prompt(text: str, question_type: str, num_questions: int, 
     times = [config["expectedTimeToAnswer"] for config in expected_config]
     
     return f"""Generate {num_questions} technical interview questions based on the provided context.
-Each question should align with the job requirements and candidate's background.
+Each question should align with the job requirements and candidate's background, as well as consider the previously asked questions in the interview.
 
 RETURN JSON IN THIS FORMAT:
 {{
