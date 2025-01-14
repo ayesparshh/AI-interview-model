@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Dict, Any
 from enum import Enum
 
 class DifficultyLevel(str, Enum):
@@ -22,6 +22,9 @@ class QuestionWithTime(BaseModel):
     estimated_time_minutes: int
     category: str
     sequenceNumber: int
+
+    class Config:
+        extra = "allow"
 
 class QuestionGenerationResponse(BaseModel):
     questions: List[QuestionWithTime]

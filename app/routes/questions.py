@@ -33,31 +33,38 @@ def create_structured_prompt(text: str, question_type: str, num_questions: int, 
     categories = [config["category"] for config in expected_config]
     times = [config["expectedTimeToAnswer"] for config in expected_config]
     
-    return f"""Generate {num_questions} technical interview questions based on the provided context.
-Each question should align with the job requirements and candidate's background, as well as consider the previously asked questions in the interview.
+    return f"""You are an expert technical interviewer conducting a deep technical assessment.
+Review the previous Q&A carefully:
+{text}
+
+IMPORTANT RULES FOR FOLLOW-UP QUESTIONS:
+1. Your next question MUST directly build upon the candidate's previous answers
+2. For React.memo answer: Probe deeper into performance optimization scenarios
+3. For microservices answer: Question specific implementation details mentioned
+
+Example flow:
+If they mentioned "message queues for async operations", ask about:
+- Specific message queue implementation choices
+- Error handling and retry strategies
+- Message ordering guarantees
 
 RETURN JSON IN THIS FORMAT:
 {{
     "questions": [
         {{
-            "question": "Your technical question here",
+            "question": "Your technical follow-up question that digs deeper into previous answers",
             "time_minutes": {times[0]},
             "category": "{categories[0]}",
-            "sequence": 1
+            "sequence": {expected_config[0]['sequenceNumber']}
         }}
     ]
 }}
 
-Context:
-{text}
-
 Requirements:
-1. Generate EXACTLY {num_questions} questions
-2. Each question must be unique
-3. Questions must match these categories: {', '.join(categories)}
-4. Questions should take exactly the specified time: {', '.join(map(str, times))} minutes
-5. Never repeat previous questions
-6. Make questions progressively harder
+1. Questions MUST reference specific details from previous answers
+2. Focus on technical depth rather than breadth
+3. Challenge assumptions made in previous answers
+4. Ask for concrete implementation details
 """
 
 def parse_llm_response_text(content: str) -> list[QuestionWithTime]:
@@ -146,20 +153,22 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         """
 
         completion = client.chat.complete(
-            model=model,
-            messages=[{
-                "role": "system", 
-                "content": "You are an expert technical interviewer. Generate questions exactly matching the specified categories and times."
-            }, {
-                "role": "user",
-                "content": create_structured_prompt(
-                    tech_context, 
-                    , 
-                    len(request.expectedQuestionsConfig),
-                    request.expectedQuestionsConfig
-                )
-            }]
+    model=model,
+    messages=[{
+        "role": "system", 
+        "content": f"""You are an expert interviewer specializing in {request.expectedQuestionsConfig[0]['category']} questions.
+        Generate questions that are strictly {request.expectedQuestionsConfig[0]['category']} in nature.
+        Do not mix technical and behavioral aspects unless specifically asked for."""
+    }, {
+        "role": "user",
+        "content": create_structured_prompt(
+            tech_context, 
+            request.expectedQuestionsConfig[0]['category'],
+            len(request.expectedQuestionsConfig),
+            request.expectedQuestionsConfig
         )
+    }]
+)
 
         response_content = completion.choices[0].message.content
         questions_data = json.loads(clean_json_string(response_content))
@@ -168,12 +177,17 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         for i, q in enumerate(questions_data.get("questions", [])):
             if i < len(request.expectedQuestionsConfig):
                 config = request.expectedQuestionsConfig[i]
-                questions.append(QuestionWithTime(
-                    question=q["question"],
-                    estimated_time_minutes=config["expectedTimeToAnswer"],
-                    category=config["category"],
-                    sequenceNumber=config["sequenceNumber"]
-                ))
+                
+                question_data = {
+                    "question": q["question"],
+                    "estimated_time_minutes": config["expectedTimeToAnswer"],
+                    "category": config["category"],
+                    "sequenceNumber": config["sequenceNumber"],
+                    **{k: v for k, v in config.items() 
+                       if k not in ["expectedTimeToAnswer", "category", "sequenceNumber"]}
+                }
+
+                questions.append(QuestionWithTime(**question_data))
 
         return QuestionGenerationResponse(questions=questions)
 
