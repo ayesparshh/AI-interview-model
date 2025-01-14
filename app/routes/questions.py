@@ -172,7 +172,7 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
                     question=q["question"],
                     estimated_time_minutes=config["expectedTimeToAnswer"],
                     category=config["category"],
-                    sequenceNumber=i + 1
+                    sequenceNumber=config["sequenceNumber"]
                 ))
 
         return QuestionGenerationResponse(questions=questions)
