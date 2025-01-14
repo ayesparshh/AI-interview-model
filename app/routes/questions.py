@@ -34,7 +34,7 @@ def create_structured_prompt(text: str, question_type: str, num_questions: int, 
     times = [config["expectedTimeToAnswer"] for config in expected_config]
     
     return f"""Generate {num_questions} technical interview questions based on the provided context.
-Each question should align with the job requirements and candidate's background.
+Each question should align with the job requirements and candidate's background, as well as consider the previously asked questions in the interview.
 
 RETURN JSON IN THIS FORMAT:
 {{
@@ -116,7 +116,7 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
     try:
         previous_questions_text = ""
         if request.previousQuestions:
-            previous_questions_text = "Previously Asked Questions:\n"
+            previous_questions_text = ""
             for qa in request.previousQuestions:
                 previous_questions_text += f"Q: {qa['question']}\nA: {qa['answer']}\n"
 
@@ -129,16 +129,19 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         Experience Required: {request.job.experienceRequired} years
         """
 
-        skill_context = "\nSkill Requirements:\n"
+        skill_context = ""
         for skill, desc in request.skillDescriptionMap.items():
             skill_context += f"- {skill}: {desc}\n"
 
         tech_context = f"""
+        Following the data you need to consider when generating questions:
         CV Background:
         {request.cvParsedData}
-        
+        Job Details:
         {job_context}
+        User's Experience in required Skills:
         {skill_context}
+        Previously Asked Questions during this Interview (Take these into context when asking future questions) (You may ignore questions which were not answered):
         {previous_questions_text}
         """
 
