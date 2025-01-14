@@ -56,30 +56,41 @@ Scoring criteria:
 """
 
 JOB_MATCH_ANALYSIS_PROMPT = """
-Analyze this match and provide specific percentage scores.
-IMPORTANT: Scores must be between 85-100% based on actual match quality.
+Analyze this match and provide specific percentage scores WITH DETAILED COMMENTS.
+IMPORTANT: 
+1. Scores must be between 85-100% ONLY if clear match evidence exists
+2. If CV data is missing/invalid/incomplete, score MUST be 0%
+3. Validate each skill against actual CV content
 
 Job Requirements:
 Title: {title}
+Objective: {objective}
+Goals: {goals}
 Description: {description}
 Required Skills: {skills}
 Required Experience: {experience}
 
 Candidate Details:
-Technical Skills: {candidate_skills}
-Experience Level: {candidate_experience}
-Notice Period: {notice_period}
-Expected Salary: {salary}
+CV Data: {cv_data}
+Skill Details: {skill_descriptions}
 
 YOU MUST RESPOND EXACTLY IN THIS FORMAT:
 Overall: XX%
+[Detailed comment explaining overall match percentage]
+
 Skills Match: XX%
+[Detailed comment explaining skills match percentage]
+
 Experience Match: XX%
+[Detailed comment explaining experience match percentage]
 
 Analysis:
-[Detailed justification for each score]
+[Overall detailed justification for each score]
 
-DO NOT default to minimum scores. Evaluate actual match quality.
+VALIDATION RULES:
+1. If CV Data is "." or empty, all scores must be 0%
+2. Skills must be explicitly mentioned in CV Data
+3. Experience must be verifiable from CV Data
 """
 
 FOLLOW_UP_QUESTION_PROMPT = """

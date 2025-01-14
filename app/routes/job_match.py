@@ -10,7 +10,8 @@ async def analyze_job_match(request: JobMatchRequest):
     try:
         overall_match, requirements = await matcher.analyze_match(
             request.jobDescription.dict(),
-            request.candidateProfile.dict()
+            request.cvData,
+            request.skillDescriptionMap
         )
         
         return JobMatchResponse(

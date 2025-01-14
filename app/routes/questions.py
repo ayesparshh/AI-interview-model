@@ -112,19 +112,19 @@ class JobData(BaseModel):
     experienceRequired: int   
 
 class QuestionGenerationRequest(BaseModel):
-    cvParsedData: str 
-    skillDescriptionMap: Dict[str, str]
-    job: JobData
-    previousQuestions: List[Dict[str, str]] = []
-    expectedQuestionsConfig: List[Dict[str, Any]]
+    cv_data: str 
+    skill_description_map: Dict[str, str]
+    job_data: JobData
+    previous_questions: List[Dict[str, str]] = []
+    expected_questions_config: List[Dict[str, Any]]
 
 @router.post("/generate-questions", response_model=QuestionGenerationResponse)
 async def generate_questions(request: QuestionGenerationRequest = Body(...)):
     try:
         previous_questions_text = ""
-        if request.previousQuestions:
+        if request.previous_questions:
             previous_questions_text = ""
-            for qa in request.previousQuestions:
+            for qa in request.previous_questions:
                 previous_questions_text += f"Q: {qa['question']}\nA: {qa['answer']}\n"
 
         job_context = f"""
@@ -137,13 +137,13 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         """
 
         skill_context = ""
-        for skill, desc in request.skillDescriptionMap.items():
+        for skill, desc in request.skill_description_map.items():
             skill_context += f"- {skill}: {desc}\n"
 
         tech_context = f"""
         Following the data you need to consider when generating questions:
         CV Background:
-        {request.cvParsedData}
+        {request.cv_data}
         Job Details:
         {job_context}
         User's Experience in required Skills:
@@ -156,16 +156,16 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
     model=model,
     messages=[{
         "role": "system", 
-        "content": f"""You are an expert interviewer specializing in {request.expectedQuestionsConfig[0]['category']} questions.
-        Generate questions that are strictly {request.expectedQuestionsConfig[0]['category']} in nature.
+        "content": f"""You are an expert interviewer specializing in {request.expected_questions_config[0]['category']} questions.
+        Generate questions that are strictly {request.expected_questions_config[0]['category']} in nature.
         Do not mix technical and behavioral aspects unless specifically asked for."""
     }, {
         "role": "user",
         "content": create_structured_prompt(
             tech_context, 
-            request.expectedQuestionsConfig[0]['category'],
-            len(request.expectedQuestionsConfig),
-            request.expectedQuestionsConfig
+            request.expected_questions_config[0]['category'],
+            len(request.expected_questions_config),
+            request.expected_questions_config
         )
     }]
 )
@@ -175,8 +175,8 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         questions = []
         
         for i, q in enumerate(questions_data.get("questions", [])):
-            if i < len(request.expectedQuestionsConfig):
-                config = request.expectedQuestionsConfig[i]
+            if i < len(request.expected_questions_config):
+                config = request.expected_questions_config[i]
                 
                 question_data = {
                     "question": q["question"],

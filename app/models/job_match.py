@@ -3,9 +3,11 @@ from typing import Dict, List
 
 class JobDescription(BaseModel):
     title: str
+    objective: str
+    goals: str
     description: str
     skills: List[str]
-    experienceRequired: str
+    experienceRequired: int
 
 class CandidateProfile(BaseModel):
     skills: Dict[str, str]
@@ -16,13 +18,15 @@ class CandidateProfile(BaseModel):
 
 class JobMatchRequest(BaseModel):
     jobDescription: JobDescription
-    candidateProfile: CandidateProfile
+    cvData: str
+    skillDescriptionMap: Dict[str, str] | None = None
 
 class RequirementMatch(BaseModel):
     requirement: str
     expectation: str
     candidateProfile: str
     matchPercentage: float
+    comment: str
 
 class JobMatchResponse(BaseModel):
     overallMatch: float
