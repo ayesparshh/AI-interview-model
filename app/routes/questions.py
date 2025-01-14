@@ -116,7 +116,7 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
     try:
         previous_questions_text = ""
         if request.previousQuestions:
-            previous_questions_text = "Previously Asked Questions:\n"
+            previous_questions_text = ""
             for qa in request.previousQuestions:
                 previous_questions_text += f"Q: {qa['question']}\nA: {qa['answer']}\n"
 
@@ -129,16 +129,19 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         Experience Required: {request.job.experienceRequired} years
         """
 
-        skill_context = "\nSkill Requirements:\n"
+        skill_context = ""
         for skill, desc in request.skillDescriptionMap.items():
             skill_context += f"- {skill}: {desc}\n"
 
         tech_context = f"""
+        Following the data you need to consider when generating questions:
         CV Background:
         {request.cvParsedData}
-        
+        Job Details:
         {job_context}
+        User's Experience in required Skills:
         {skill_context}
+        Previously Asked Questions during this Interview (Take these into context when asking future questions) (You may ignore questions which were not answered):
         {previous_questions_text}
         """
 
