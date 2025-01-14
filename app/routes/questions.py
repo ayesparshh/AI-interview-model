@@ -54,8 +54,7 @@ RETURN JSON IN THIS FORMAT:
         {{
             "question": "Your technical follow-up question that digs deeper into previous answers",
             "time_minutes": {times[0]},
-            "category": "{categories[0]}",
-            "sequence": {expected_config[0]['sequenceNumber']}
+            "category": "{categories[0]}"
         }}
     ]
 }}
@@ -182,9 +181,8 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
                     "question": q["question"],
                     "estimated_time_minutes": config["expectedTimeToAnswer"],
                     "category": config["category"],
-                    "sequenceNumber": config["sequenceNumber"],
                     **{k: v for k, v in config.items() 
-                       if k not in ["expectedTimeToAnswer", "category", "sequenceNumber"]}
+                       if k not in ["expectedTimeToAnswer", "category"]}
                 }
 
                 questions.append(QuestionWithTime(**question_data))
