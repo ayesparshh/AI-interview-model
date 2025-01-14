@@ -78,6 +78,8 @@ class JobApplicationForm(BaseModel):
 class QuestionWithTime(BaseModel): #use
     question: str
     estimated_time_minutes: int
+    category: str
+    sequenceNumber: int
 
 class QuestionGenerationResponse(BaseModel): #use
     questions: List[QuestionWithTime]

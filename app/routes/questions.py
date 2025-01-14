@@ -29,7 +29,10 @@ def clean_json_string(content: str) -> str:
     
     return json_str
 
-def create_structured_prompt(text: str, question_type: str, num_questions: int) -> str:
+def create_structured_prompt(text: str, question_type: str, num_questions: int, expected_config: List[Dict]) -> str:
+    categories = [config["category"] for config in expected_config]
+    times = [config["expectedTimeToAnswer"] for config in expected_config]
+    
     return f"""Generate {num_questions} technical interview questions based on the provided context.
 Each question should align with the job requirements and candidate's background.
 
@@ -38,8 +41,9 @@ RETURN JSON IN THIS FORMAT:
     "questions": [
         {{
             "question": "Your technical question here",
-            "time_minutes": number between 2-6,
-            "category": "category_name"
+            "time_minutes": {times[0]},
+            "category": "{categories[0]}",
+            "sequence": 1
         }}
     ]
 }}
@@ -50,16 +54,10 @@ Context:
 Requirements:
 1. Generate EXACTLY {num_questions} questions
 2. Each question must be unique
-3. Questions should cover skills mentioned in the job description
-4. Questions should match candidate's experience level
-5. Include time estimates based on complexity
-6. Never repeat previous questions
-
-Time Guidelines:
-- System design: 5-6 minutes
-- Implementation: 4-5 minutes
-- Experience: 3-4 minutes
-- Tools/Tech: 2-3 minutes
+3. Questions must match these categories: {', '.join(categories)}
+4. Questions should take exactly the specified time: {', '.join(map(str, times))} minutes
+5. Never repeat previous questions
+6. Make questions progressively harder
 """
 
 def parse_llm_response_text(content: str) -> list[QuestionWithTime]:
@@ -148,10 +146,15 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
             model=model,
             messages=[{
                 "role": "system", 
-                "content": "You are an expert technical interviewer. Generate relevant technical questions."
+                "content": "You are an expert technical interviewer. Generate questions exactly matching the specified categories and times."
             }, {
                 "role": "user",
-                "content": create_structured_prompt(tech_context, "technical", len(request.expectedQuestionsConfig))
+                "content": create_structured_prompt(
+                    tech_context, 
+                    "technical", 
+                    len(request.expectedQuestionsConfig),
+                    request.expectedQuestionsConfig
+                )
             }]
         )
 
@@ -161,9 +164,12 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         
         for i, q in enumerate(questions_data.get("questions", [])):
             if i < len(request.expectedQuestionsConfig):
+                config = request.expectedQuestionsConfig[i]
                 questions.append(QuestionWithTime(
                     question=q["question"],
-                    estimated_time_minutes=request.expectedQuestionsConfig[i]["expectedTimeToAnswer"]
+                    estimated_time_minutes=config["expectedTimeToAnswer"],
+                    category=config["category"],
+                    sequenceNumber=i + 1
                 ))
 
         return QuestionGenerationResponse(questions=questions)
