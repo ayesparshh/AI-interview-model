@@ -21,7 +21,6 @@ class QuestionWithTime(BaseModel):
     question: str
     estimated_time_minutes: int
     category: str
-    sequenceNumber: int
 
     class Config:
         extra = "allow"
