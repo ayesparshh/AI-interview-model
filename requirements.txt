@@ -7,3 +7,5 @@ fastapi
 uvicorn
 python-multipart
 PyPDF2
+sqlalchemy
+psycopg2-binary

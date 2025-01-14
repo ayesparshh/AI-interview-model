@@ -56,14 +56,8 @@ Scoring criteria:
 """
 
 JOB_MATCH_ANALYSIS_PROMPT = """
-Analyze this job match with emphasis on transferable skills.
-IMPORTANT: Base score starts at 85% when experience matches.
-
-Consider these transferable skill mappings:
-- Any backend language → other backend tasks
-- Cloud platforms → infrastructure knowledge
-- API development → general backend expertise
-- Database experience → any data storage
+Analyze this match and provide specific percentage scores.
+IMPORTANT: Scores must be between 85-100% based on actual match quality.
 
 Job Requirements:
 Title: {title}
@@ -77,8 +71,15 @@ Experience Level: {candidate_experience}
 Notice Period: {notice_period}
 Expected Salary: {salary}
 
-Provide match percentages (minimum 85% for experience matches).
-Focus on skill transferability and potential.
+YOU MUST RESPOND EXACTLY IN THIS FORMAT:
+Overall: XX%
+Skills Match: XX%
+Experience Match: XX%
+
+Analysis:
+[Detailed justification for each score]
+
+DO NOT default to minimum scores. Evaluate actual match quality.
 """
 
 FOLLOW_UP_QUESTION_PROMPT = """

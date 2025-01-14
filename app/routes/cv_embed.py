@@ -35,6 +35,8 @@ async def process_resume(
         
         embedding_vector = embeddings.drop(['document_id', 'timestamp'], axis=1).values[0].tolist()
         
+        embedding_gen.save_to_db(userId, embedding_vector)
+
         return EmbeddingResponse(
             userId=userId,
             embeddings=embedding_vector,

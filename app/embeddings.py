@@ -7,6 +7,11 @@ from retry import retry
 import logging
 import json
 from datetime import datetime
+from app.db.database import SessionLocal
+from app.db.models import DocumentEmbedding
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+from typing import List, Dict
 
 logging.basicConfig(
     level=logging.INFO,
@@ -83,6 +88,56 @@ class EmbeddingGenerator:
         except Exception as e:
             logger.error(f"Failed to save embeddings: {e}")
             raise
+    def save_to_db(self, document_id: str, embeddings: List[float]):
+        db = SessionLocal()
+        try:
+            db_embedding = DocumentEmbedding(
+                document_id=document_id,
+                embeddings=embeddings
+            )
+            db.add(db_embedding)
+            db.commit()
+            db.refresh(db_embedding)
+            return db_embedding
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+    def get_embedding(document_id: str):
+        db = SessionLocal()
+        try:
+            return db.query(DocumentEmbedding).filter(DocumentEmbedding.document_id == document_id).first()
+        finally:
+            db.close()
+    def find_matching_candidates(self, job_description_embedding: List[float], top_k: int = 5) -> List[Dict]:
+        db = SessionLocal()
+        try:
+            candidates = db.query(DocumentEmbedding).all()
+            
+            if not candidates:
+                return []
+
+            job_embedding = np.array(job_description_embedding).reshape(1, -1)
+            
+            similarities = []
+            for candidate in candidates:
+                candidate_embedding = np.array(candidate.embeddings).reshape(1, -1)
+                similarity = cosine_similarity(job_embedding, candidate_embedding)[0][0]
+                similarities.append({
+                    'document_id': candidate.document_id,
+                    'similarity_score': float(similarity),
+                    'timestamp': candidate.timestamp
+                })
+            
+            sorted_matches = sorted(similarities, 
+                                 key=lambda x: x['similarity_score'], 
+                                 reverse=True)
+            
+            return sorted_matches[:top_k]
+            
+        finally:
+            db.close()            
 
 def load_document(file_path: str, doc_id: str) -> Tuple[str, str]:
     """Load a document from file with error handling"""

@@ -30,16 +30,16 @@ def clean_json_string(content: str) -> str:
     return json_str
 
 def create_structured_prompt(text: str, question_type: str, num_questions: int) -> str:
-    """Create a more specific prompt for technical questions"""
-    return f"""Generate {num_questions} technical interview questions about {question_type}.
-Focus on practical, real-world scenarios and problem-solving.
+    return f"""Generate {num_questions} technical interview questions based on the provided context.
+Each question should align with the job requirements and candidate's background.
 
-STRICTLY RETURN JSON IN THIS FORMAT:
+RETURN JSON IN THIS FORMAT:
 {{
     "questions": [
         {{
             "question": "Your technical question here",
-            "time_minutes": 4
+            "time_minutes": number between 2-6,
+            "category": "category_name"
         }}
     ]
 }}
@@ -48,17 +48,18 @@ Context:
 {text}
 
 Requirements:
-1. Questions must be detailed technical questions
-2. Focus on hands-on experience
-3. Include system design and architecture
-4. Cover best practices and patterns
-5. Ask about real-world problem solving
+1. Generate EXACTLY {num_questions} questions
+2. Each question must be unique
+3. Questions should cover skills mentioned in the job description
+4. Questions should match candidate's experience level
+5. Include time estimates based on complexity
+6. Never repeat previous questions
 
-Example valid question structures:
-- Explain how you would implement X using Y
-- Design a system that handles X with Y requirements
-- Describe your experience with X and how you solved Y
-- Walk through your approach to implementing X
+Time Guidelines:
+- System design: 5-6 minutes
+- Implementation: 4-5 minutes
+- Experience: 3-4 minutes
+- Tools/Tech: 2-3 minutes
 """
 
 def parse_llm_response_text(content: str) -> list[QuestionWithTime]:
@@ -98,70 +99,78 @@ def parse_llm_response_text(content: str) -> list[QuestionWithTime]:
     return questions
 
 class QuestionGenerationRequest(BaseModel):
-    cv_data: str
-    job_description: str
-    count: int = 3
+    cvParsedData: str 
+    skillDescriptionMap: Dict[str, str]
+    job: JobData
+    previousQuestions: List[Dict[str, str]] = []
+    expectedQuestionsConfig: List[Dict[str, Any]]
+
+class JobData(BaseModel):
+    title: str
+    objective: str
+    goals: str 
+    jobDescription: str
+    skills: List[str]
+    experienceRequired: int
 
 @router.post("/generate-questions", response_model=QuestionGenerationResponse)
 async def generate_questions(request: QuestionGenerationRequest = Body(...)):
-    """Generates interview questions based on CV and job description."""
     try:
+        previous_questions_text = ""
+        if request.previousQuestions:
+            previous_questions_text = "Previously Asked Questions:\n"
+            for qa in request.previousQuestions:
+                previous_questions_text += f"Q: {qa['question']}\nA: {qa['answer']}\n"
+
+        job_context = f"""
+        Job Title: {request.job.title}
+        Objective: {request.job.objective}
+        Goals: {request.job.goals}
+        Description: {request.job.jobDescription}
+        Required Skills: {', '.join(request.job.skills)}
+        Experience Required: {request.job.experienceRequired} years
+        """
+
+        skill_context = "\nSkill Requirements:\n"
+        for skill, desc in request.skillDescriptionMap.items():
+            skill_context += f"- {skill}: {desc}\n"
+
         tech_context = f"""
-        CV Technology Background:
-        {request.cv_data}
+        CV Background:
+        {request.cvParsedData}
         
-        Job Requirements:
-        {request.job_description}
-        
-        Generate questions that assess both the candidate's experience ({request.cv_data}) 
-        and the job requirements ({request.job_description}).
+        {job_context}
+        {skill_context}
+        {previous_questions_text}
         """
 
         completion = client.chat.complete(
             model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": """You are an expert technical interviewer specializing in software engineering.
-                    Always return responses in valid JSON format matching the specified structure."""
-                },
-                {
-                    "role": "user",
-                    "content": create_structured_prompt(tech_context, "software engineering", request.count)
-                }
-            ]
+            messages=[{
+                "role": "system", 
+                "content": "You are an expert technical interviewer. Generate relevant technical questions."
+            }, {
+                "role": "user",
+                "content": create_structured_prompt(tech_context, "technical", len(request.expectedQuestionsConfig))
+            }]
         )
 
         response_content = completion.choices[0].message.content
+        questions_data = json.loads(clean_json_string(response_content))
+        questions = []
         
-        try:
-            data = json.loads(clean_json_string(response_content))
-            questions = [
-                QuestionWithTime(
+        for i, q in enumerate(questions_data.get("questions", [])):
+            if i < len(request.expectedQuestionsConfig):
+                questions.append(QuestionWithTime(
                     question=q["question"],
-                    estimated_time_minutes=min(max(int(q.get("time_minutes", 4)), 2), 6)
-                )
-                for q in data.get("questions", [])
-                if q.get("question")
-            ][:request.count]
-            
-        except json.JSONDecodeError:
-            questions = parse_llm_response_text(response_content)[:request.count]
-        
-        if not questions:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to generate valid questions from AI"
-            )
-            
+                    estimated_time_minutes=request.expectedQuestionsConfig[i]["expectedTimeToAnswer"]
+                ))
+
         return QuestionGenerationResponse(questions=questions)
-            
+
     except Exception as e:
         logger.error(f"Error generating questions: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to generate interview questions"
-        )
+        raise HTTPException(status_code=500, detail="Failed to generate questions")
 
 def parse_follow_up_response(content: str) -> dict:
     """Clean and parse LLM response into structured format"""
