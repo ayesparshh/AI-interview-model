@@ -128,12 +128,12 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
                 previous_questions_text += f"Q: {qa['question']}\nA: {qa['answer']}\n"
 
         job_context = f"""
-        Job Title: {request.job.title}
-        Objective: {request.job.objective}
-        Goals: {request.job.goals}
-        Description: {request.job.jobDescription}
-        Required Skills: {', '.join(request.job.skills)}
-        Experience Required: {request.job.experienceRequired} years
+        Job Title: {request.job_data.title}
+        Objective: {request.job_data.objective}
+        Goals: {request.job_data.goals}
+        Description: {request.job_data.jobDescription}
+        Required Skills: {', '.join(request.job_data.skills)}
+        Experience Required: {request.job_data.experienceRequired} years
         """
 
         skill_context = ""
