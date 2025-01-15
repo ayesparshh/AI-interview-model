@@ -2,15 +2,15 @@ from pydantic import BaseModel
 from typing import List, Optional
 # from sqlalchemy import Column, Integer, String, Float, DateTime, ARRAY
 # from sqlalchemy.sql import func
-from .database import Base
+# from .database import Base
 
-class DocumentEmbedding(Base):
-    __tablename__ = "document_embeddings"
+# class DocumentEmbedding(Base):
+#     __tablename__ = "document_embeddings"
 
-    id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(String, index=True)
-    embeddings = Column(ARRAY(Float))
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+#     id = Column(Integer, primary_key=True, index=True)
+#     document_id = Column(String, index=True)
+#     embeddings = Column(ARRAY(Float))
+#     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
 class ChatRequest(BaseModel):
     message: str
