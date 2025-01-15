@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import questions,cv_embed,job_match
+from .routes import questions,cv_embed,job_match,answers
 
 app = FastAPI()
 
@@ -15,6 +15,7 @@ app.add_middleware(
 app.include_router(questions.router)
 app.include_router(cv_embed.router)
 app.include_router(job_match.router)
+app.include_router(answers.router)
 
 if __name__ == "__main__":
     import uvicorn

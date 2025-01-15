@@ -3,66 +3,70 @@ from typing import List, Tuple
 from pydantic import BaseModel
 from ..models import AnswerPair, AnswerScore, AnswerScoringResponse
 from ..prompts import ANSWER_SCORING_PROMPT
-from app.config import client
-# uvicorn app.main:app --reload
-# python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+from app.config import client, model
+
 router = APIRouter()
 
 class ScoringRequest(BaseModel):
     answers: List[AnswerPair]
-    job_description: str
+
+def parse_scoring_response(response_text: str) -> Tuple[int, str]:
+    """Parse the scoring response from the LLM to extract score"""
+    try:
+        import re
+        score_match = re.search(r'(?:score:?\s*)?(\d{1,2})(?:/10)?', response_text.lower())
+        if not score_match:
+            return 0, "Could not parse score from response"
+            
+        score = int(score_match.group(1))
+        score = max(0, min(score, 10))
+            
+        return score
+        
+    except Exception as e:
+        return 0, f"Error parsing response: {str(e)}"
+
 
 @router.post("/score-answers", response_model=AnswerScoringResponse)
-async def score_answers(
-    request: ScoringRequest = Body(...)
-):
+async def score_answers(request: ScoringRequest = Body(...)):
     try:
         scores = []
+        total_score = 0
+        
         for answer_pair in request.answers:
             completion = client.chat.complete(
-    model=model,  # from config.py
-    messages=[
-        {
-            "role": "system",
-            "content": """You are an expert technical interviewer specializing in software engineering.
-            Always return responses in valid JSON format matching the specified structure."""
-        },
-        {
-            "role": "user",
-            "content": create_structured_prompt(tech_context, "software engineering", request.count)
-        }
-    ]
-)
+                model=model,
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": "You are an expert technical interviewer. Score answers between 0-10."
+                    },
+                    {
+                        "role": "user",
+                        "content": ANSWER_SCORING_PROMPT.format(
+                            question=answer_pair.question,
+                            answer=answer_pair.answer
+                        )
+                    }
+                ]
+            )
             
             response_text = completion.choices[0].message.content
-            score, feedback = parse_scoring_response(response_text)
+            score = parse_scoring_response(response_text)
+            total_score += score
             
             scores.append(AnswerScore(
                 question=answer_pair.question,
-                answer=answer_pair.answer,
+                answer=answer_pair.answer, 
                 score=score,
-                feedback=feedback
             ))
-            
-        return AnswerScoringResponse(scores=scores)
         
+        avg_score = total_score // len(request.answers)
+        
+        return AnswerScoringResponse(
+            scores=scores,
+            overall_score=avg_score
+        )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-def parse_scoring_response(response_text: str) -> Tuple[int, str]:
-    score = 0
-    feedback = ""
-    
-    for line in response_text.split('\n'):
-        line = line.strip()
-        if line.startswith('SCORE:'):
-            try:
-                score_str = line.replace('SCORE:', '').strip()
-                score = int(float(score_str))
-                score = max(0, min(10, score))
-            except ValueError:
-                score = 0
-        elif line.startswith('FEEDBACK:'):
-            feedback = line.replace('FEEDBACK:', '').strip()
-            
-    return score, feedback

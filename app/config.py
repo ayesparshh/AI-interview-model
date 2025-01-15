@@ -7,3 +7,6 @@ client = Mistral(
 )
 
 model = "mistral-large-latest"
+
+# uvicorn app.main:app --reload
+# python -m uvicorn app.main:app --host 0.0.0.0 --port 8000

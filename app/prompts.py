@@ -39,20 +39,26 @@ Job Description: {job_description}
 
 ANSWER_SCORING_PROMPT = """
 Evaluate the following question-answer pair and provide a score out of 10.
-Format your response EXACTLY as follows:
+Ensure your response strictly follows the format below.
 
+Format:
 SCORE: [number between 0-10]
-FEEDBACK: [brief explanation of the score]
+FEEDBACK: [brief explanation addressing the criteria]
+
+Scoring Criteria:
+1. Completeness (0-4 points): Does the answer fully address all parts of the question?
+2. Technical Accuracy (0-3 points): Is the technical content correct and well-explained?
+3. Communication Clarity (0-2 points): Is the answer clearly and effectively communicated?
+4. Practical Application (0-1 points): Does the answer include practical examples or applications?
+
+Additional Requirements:
+- Reference specific aspects of the candidate's answer in the feedback.
+- Avoid adding any information not present in the candidate's answer.
+- Maintain objectivity and constructiveness in feedback.
 
 Question: {question}
 Candidate Answer: {answer}
-Job Description: {job_description}
 
-Scoring criteria:
-- Completeness (0-3 points)
-- Technical accuracy (0-3 points)
-- Communication clarity (0-2 points)
-- Practical application (0-2 points)
 """
 
 JOB_MATCH_ANALYSIS_PROMPT = """

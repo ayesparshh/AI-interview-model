@@ -5,11 +5,19 @@ from .question_models import (
     QuestionWithDifficulty,
     FollowUpQuestionRequest
 )
+from .answer_models import (
+    AnswerPair,
+    AnswerScore,
+    AnswerScoringResponse
+)
 
 __all__ = [
     'EmbeddingResponse',
     'QuestionWithTime',
     'QuestionGenerationResponse',
     'QuestionWithDifficulty',
-    'FollowUpQuestionRequest'
+    'FollowUpQuestionRequest',
+    'AnswerPair',
+    'AnswerScore',
+    'AnswerScoringResponse'
 ]

@@ -83,19 +83,6 @@ class QuestionWithTime(BaseModel): #use
 class QuestionGenerationResponse(BaseModel): #use
     questions: List[QuestionWithTime]
 
-class AnswerPair(BaseModel):
-    question: str
-    answer: str
-
-class AnswerScore(BaseModel):
-    question: str
-    answer: str
-    score: int
-    feedback: str
-
-class AnswerScoringResponse(BaseModel):
-    scores: List[AnswerScore]
-
 class CandidateMatch(BaseModel):
     candidate_id: str
     candidate_name: str
