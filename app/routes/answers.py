@@ -11,7 +11,7 @@ class ScoringRequest(BaseModel):
     answers: List[AnswerPair]
 
 def parse_scoring_response(response_text: str) -> Tuple[int, str]:
-    """Parse the scoring response from the LLM to extract score"""
+    """Parse the scoring response from the LLM to extract score and comment"""
     try:
         import re
         score_match = re.search(r'(?:score:?\s*)?(\d{1,2})(?:/10)?', response_text.lower())
@@ -20,12 +20,17 @@ def parse_scoring_response(response_text: str) -> Tuple[int, str]:
             
         score = int(score_match.group(1))
         score = max(0, min(score, 10))
+        
+        comment_match = re.search(r'comment:\s*(.*)', response_text.lower())
+        if comment_match:
+            comment = ' '.join(comment_match.group(1).split()[:6])
+        else:
+            comment = "No comment provided"
             
-        return score
+        return score, comment
         
     except Exception as e:
         return 0, f"Error parsing response: {str(e)}"
-
 
 @router.post("/score-answers", response_model=AnswerScoringResponse)
 async def score_answers(request: ScoringRequest = Body(...)):
@@ -52,13 +57,14 @@ async def score_answers(request: ScoringRequest = Body(...)):
             )
             
             response_text = completion.choices[0].message.content
-            score = parse_scoring_response(response_text)
+            score, comment = parse_scoring_response(response_text)
             total_score += score
             
             scores.append(AnswerScore(
                 question=answer_pair.question,
                 answer=answer_pair.answer, 
                 score=score,
+                comment=comment
             ))
         
         avg_score = total_score // len(request.answers)

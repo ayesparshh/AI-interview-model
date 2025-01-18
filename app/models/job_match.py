@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Dict, List
+from pydantic import BaseModel, Field
+from typing import Dict, List, Optional
 
 class JobDescription(BaseModel):
     title: str
@@ -17,9 +17,12 @@ class CandidateProfile(BaseModel):
     expectedSalary: float
 
 class JobMatchRequest(BaseModel):
-    jobDescription: JobDescription
-    cvData: str
-    skillDescriptionMap: Dict[str, str] | None = None
+    job: JobDescription = Field(..., alias="job")
+    cv_data: str = Field(..., alias="cv_data")
+    skill_description_map: Optional[Dict[str, str]] = Field(None, alias="skill_description_map")
+
+    class Config:
+        allow_population_by_field_name = True
 
 class RequirementMatch(BaseModel):
     requirement: str

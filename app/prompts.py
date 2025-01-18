@@ -43,7 +43,7 @@ Ensure your response strictly follows the format below.
 
 Format:
 SCORE: [number between 0-10]
-FEEDBACK: [brief explanation addressing the criteria]
+COMMENT: [brief judging comment, max 6 words]
 
 Scoring Criteria:
 1. Completeness (0-4 points): Does the answer fully address all parts of the question?
@@ -52,13 +52,12 @@ Scoring Criteria:
 4. Practical Application (0-1 points): Does the answer include practical examples or applications?
 
 Additional Requirements:
-- Reference specific aspects of the candidate's answer in the feedback.
+- Reference specific aspects of the candidate's answer in the comment.
 - Avoid adding any information not present in the candidate's answer.
 - Maintain objectivity and constructiveness in feedback.
 
 Question: {question}
 Candidate Answer: {answer}
-
 """
 
 JOB_MATCH_ANALYSIS_PROMPT = """
