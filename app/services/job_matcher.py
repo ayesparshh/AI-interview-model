@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Optional
+from typing import Any, List, Dict, Tuple
 import logging
 from ..models.job_match import RequirementMatch
 from ..config import client
@@ -22,10 +22,20 @@ class JobMatcher:
 
     @staticmethod
     def _clean_comment(text: str) -> str:
-        # Remove Analysis section and limit to 6 words
         text = text.split('\nAnalysis:')[0]
         words = text.strip().split()
         return ' '.join(words[:6])
+
+    def _extract_matched_fields(self, section: str, cv_data: str) -> Dict[str, Any]:
+        """Extract relevant fields from cv_data based on the section."""
+        if section.lower() == 'skills':
+            return {"skills": cv_data}
+        elif section.lower() == 'experience':
+            return {"experience": cv_data}
+        elif section.lower() == 'overall':
+            return {"summary": cv_data}
+        else:
+            return {}
 
     def _parse_ai_response(self, response: str) -> Dict[str, any]:
         sections = {
@@ -60,13 +70,8 @@ class JobMatcher:
 
         return sections
 
-    async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: Optional[List[Dict[str, str]]] = None):
+    async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: dict | None = None):
         try:
-            skill_description_map = {}
-            if skill_map:
-                for item in skill_map:
-                    skill_description_map.update(item)
-
             prompt = JOB_MATCH_ANALYSIS_PROMPT.format(
                 title=job_desc["title"],
                 objective=job_desc["objective"],
@@ -75,7 +80,7 @@ class JobMatcher:
                 skills=", ".join(job_desc["skills"]),
                 experience=str(job_desc["experienceRequired"]),
                 cv_data=cv_data,
-                skill_descriptions="\n".join(f"{k}: {v}" for k, v in skill_description_map.items())
+                skill_descriptions="\n".join(f"{k}: {v}" for k, v in (skill_map or {}).items())
             )
 
             completion = client.chat.complete(
@@ -90,17 +95,17 @@ class JobMatcher:
                         3. ALL comments must be EXACTLY 6 WORDS OR LESS
                         4. Be extremely concise and accurate
                         5. Verify skills against actual CV content
-                        
+
                         FORMAT EXACTLY AS:
                         Overall: XX%
                         [6 words or less comment]
-                        
+
                         Skills Match: XX%
                         [6 words or less comment]
-                        
+
                         Experience Match: XX%
                         [6 words or less comment]
-                        
+
                         NOTE: Default to 0% if CV data is invalid"""
                     },
                     {
@@ -117,28 +122,25 @@ class JobMatcher:
             sections = self._parse_ai_response(response)
             
             requirements = [
+                # Dynamically create RequirementMatch based on skill_map
                 RequirementMatch(
-                    requirement="Technical Skills",
-                    expectation=f"Required: {', '.join(job_desc['skills'])}",
-                    candidateProfile=cv_data,
-                    matchPercentage=sections['skills_match'],
-                    comment=sections['skills_comment'].strip()
-                ),
-                RequirementMatch(
-                    requirement="Experience",
-                    expectation=f"{job_desc['experienceRequired']} years",
-                    candidateProfile=cv_data,
-                    matchPercentage=sections['experience_match'],
-                    comment=sections['experience_comment'].strip()
-                ),
+                    requirement=skill,
+                    expectation=f"Required proficiency in {skill}",
+                    candidateProfile=self._extract_matched_fields(skill, cv_data),
+                    matchPercentage=sections['skills_match'].get(skill, 0.0),
+                    comment=sections['skills_comment'].get(skill, "").strip()
+                ) for skill in skill_map.keys()
+            ]
+            # Add Overall Assessment
+            requirements.append(
                 RequirementMatch(
                     requirement="Overall Assessment",
                     expectation="Job Fit Analysis",
-                    candidateProfile=cv_data,
+                    candidateProfile=self._extract_matched_fields("overall", cv_data),
                     matchPercentage=sections['match_percentage'],
                     comment=sections['overall_comment'].strip()
                 )
-            ]
+            )
 
             return sections['match_percentage'], requirements
 

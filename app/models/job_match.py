@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 class JobDescription(BaseModel):
     title: str
@@ -27,7 +27,7 @@ class JobMatchRequest(BaseModel):
 class RequirementMatch(BaseModel):
     requirement: str
     expectation: str
-    candidateProfile: str
+    candidateProfile: Dict[str, Any]
     matchPercentage: float
     comment: str
 
