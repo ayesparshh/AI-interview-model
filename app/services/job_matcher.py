@@ -70,6 +70,7 @@ class JobMatcher:
 
         return sections
 
+
     async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: dict | None = None):
         try:
             prompt = JOB_MATCH_ANALYSIS_PROMPT.format(
@@ -88,25 +89,11 @@ class JobMatcher:
                 messages=[
                     {
                         "role": "system",
-                        "content": """You are an expert HR analyst. Evaluate matches and provide scores.
+                        "content": """You are an expert HR analyst. Evaluate matches and provide comprehensive candidate profiles for each mandatory field.
                         STRICT RULES:
-                        1. Score between 85-100% ONLY if CV data shows clear evidence
-                        2. If CV data is missing/invalid, score should be 0%
-                        3. ALL comments must be EXACTLY 6 WORDS OR LESS
-                        4. Be extremely concise and accurate
-                        5. Verify skills against actual CV content
-
-                        FORMAT EXACTLY AS:
-                        Overall: XX%
-                        [6 words or less comment]
-
-                        Skills Match: XX%
-                        [6 words or less comment]
-
-                        Experience Match: XX%
-                        [6 words or less comment]
-
-                        NOTE: Default to 0% if CV data is invalid"""
+                        1. Provide detailed profiles for each requirement.
+                        2. If CV data is missing/invalid, indicate accordingly.
+                        3. Ensure all profiles are based on CV content."""
                     },
                     {
                         "role": "user", 
@@ -125,18 +112,18 @@ class JobMatcher:
                 RequirementMatch(
                     requirement=skill,
                     expectation=f"Required proficiency in {skill}",
-                    candidateProfile=self._extract_matched_fields(skill, cv_data),
-                    matchPercentage=sections['skills_match'],
-                    comment=sections['skills_comment']
+                    candidateProfile=sections.get(f"{skill}_profile", {}),
+                    matchPercentage=sections.get(f"{skill}_match", 0.0),
+                    comment=sections.get(f"{skill}_comment", "")
                 ) for skill in (skill_map or {}).keys()
             ]
             requirements.append(
                 RequirementMatch(
                     requirement="Overall Assessment",
                     expectation="Job Fit Analysis",
-                    candidateProfile=self._extract_matched_fields("overall", cv_data),
-                    matchPercentage=sections['match_percentage'],
-                    comment=sections['overall_comment'].strip()
+                    candidateProfile=sections.get("overall_profile", {}),
+                    matchPercentage=sections.get('match_percentage', 0.0),
+                    comment=sections.get('overall_comment', "").strip()
                 )
             )
 

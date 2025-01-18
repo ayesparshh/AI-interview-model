@@ -61,11 +61,7 @@ Candidate Answer: {answer}
 """
 
 JOB_MATCH_ANALYSIS_PROMPT = """
-Analyze this match and provide specific percentage scores WITH DETAILED COMMENTS.
-IMPORTANT: 
-1. Scores must be between 85-100% ONLY if clear match evidence exists
-2. If CV data is missing/invalid/incomplete, score MUST be 0%
-3. Validate each skill against actual CV content
+Analyze the following job description and candidate CV data. Provide specific percentage scores along with detailed candidate profiles for each mandatory field.
 
 Job Requirements:
 Title: {title}
@@ -77,17 +73,20 @@ Required Experience: {experience}
 
 Candidate Details:
 CV Data: {cv_data}
-Skill Details: {skill_descriptions}
+Skill Descriptions: {skill_descriptions}
 
 YOU MUST RESPOND EXACTLY IN THIS FORMAT:
 Overall: XX%
-[Detailed comment explaining overall match percentage]
+Overall Profile: {overall_profile}
+Overall Comment: [Detailed comment explaining overall match percentage]
 
 Skills Match: XX%
-[Detailed comment explaining skills match percentage]
+Skills Profile: {skills_profile}
+Skills Comment: [Detailed comment explaining skills match percentage]
 
 Experience Match: XX%
-[Detailed comment explaining experience match percentage]
+Experience Profile: {experience_profile}
+Experience Comment: [Detailed comment explaining experience match percentage]
 
 Analysis:
 [Overall detailed justification for each score]

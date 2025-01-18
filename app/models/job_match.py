@@ -25,11 +25,11 @@ class JobMatchRequest(BaseModel):
         allow_population_by_field_name = True
 
 class RequirementMatch(BaseModel):
-    requirement: str
-    expectation: str
-    candidateProfile: Dict[str, Any]
-    matchPercentage: float
-    comment: str
+        requirement: str
+        expectation: str
+        candidateProfile: str
+        matchPercentage: float
+        comment: str
 
 class JobMatchResponse(BaseModel):
     overallMatch: float
