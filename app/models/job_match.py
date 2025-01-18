@@ -5,7 +5,7 @@ class JobDescription(BaseModel):
     title: str
     objective: str
     goals: str
-    description: str
+    description: str = Field(..., alias="jobDescription")
     skills: List[str]
     experienceRequired: int
 
