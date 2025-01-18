@@ -126,9 +126,9 @@ class JobMatcher:
                     requirement=skill,
                     expectation=f"Required proficiency in {skill}",
                     candidateProfile=self._extract_matched_fields(skill, cv_data),
-                    matchPercentage=sections['skills_match'].get(skill, 0.0),
-                    comment=sections['skills_comment'].get(skill, "").strip()
-                ) for skill in skill_map.keys()
+                    matchPercentage=sections['skills_match'],
+                    comment=sections['skills_comment']
+                ) for skill in (skill_map or {}).keys()
             ]
             requirements.append(
                 RequirementMatch(
