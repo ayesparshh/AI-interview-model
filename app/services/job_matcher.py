@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 import logging
 from ..models.job_match import RequirementMatch
 from ..config import client
@@ -60,8 +60,13 @@ class JobMatcher:
 
         return sections
 
-    async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: dict | None = None):
+    async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: Optional[List[Dict[str, str]]] = None):
         try:
+            skill_description_map = {}
+            if skill_map:
+                for item in skill_map:
+                    skill_description_map.update(item)
+
             prompt = JOB_MATCH_ANALYSIS_PROMPT.format(
                 title=job_desc["title"],
                 objective=job_desc["objective"],
@@ -70,40 +75,40 @@ class JobMatcher:
                 skills=", ".join(job_desc["skills"]),
                 experience=str(job_desc["experienceRequired"]),
                 cv_data=cv_data,
-                skill_descriptions="\n".join(f"{k}: {v}" for k, v in (skill_map or {}).items())
+                skill_descriptions="\n".join(f"{k}: {v}" for k, v in skill_description_map.items())
             )
 
             completion = client.chat.complete(
-            model="mistral-large-latest",
-            messages=[
-                {
-                    "role": "system",
-                    "content": """You are an expert HR analyst. Evaluate matches and provide scores.
-                    STRICT RULES:
-                    1. Score between 85-100% ONLY if CV data shows clear evidence
-                    2. If CV data is missing/invalid, score should be 0%
-                    3. ALL comments must be EXACTLY 6 WORDS OR LESS
-                    4. Be extremely concise and accurate
-                    5. Verify skills against actual CV content
-                    
-                    FORMAT EXACTLY AS:
-                    Overall: XX%
-                    [6 words or less comment]
-                    
-                    Skills Match: XX%
-                    [6 words or less comment]
-                    
-                    Experience Match: XX%
-                    [6 words or less comment]
-                    
-                    NOTE: Default to 0% if CV data is invalid"""
-                },
-                {
-                    "role": "user", 
-                    "content": prompt
-                }
-            ]
-        )
+                model="mistral-large-latest",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """You are an expert HR analyst. Evaluate matches and provide scores.
+                        STRICT RULES:
+                        1. Score between 85-100% ONLY if CV data shows clear evidence
+                        2. If CV data is missing/invalid, score should be 0%
+                        3. ALL comments must be EXACTLY 6 WORDS OR LESS
+                        4. Be extremely concise and accurate
+                        5. Verify skills against actual CV content
+                        
+                        FORMAT EXACTLY AS:
+                        Overall: XX%
+                        [6 words or less comment]
+                        
+                        Skills Match: XX%
+                        [6 words or less comment]
+                        
+                        Experience Match: XX%
+                        [6 words or less comment]
+                        
+                        NOTE: Default to 0% if CV data is invalid"""
+                    },
+                    {
+                        "role": "user", 
+                        "content": prompt
+                    }
+                ]
+            )
             response = completion.choices[0].message.content
 
             if not response:

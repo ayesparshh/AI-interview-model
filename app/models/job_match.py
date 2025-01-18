@@ -19,7 +19,7 @@ class CandidateProfile(BaseModel):
 class JobMatchRequest(BaseModel):
     job: JobDescription = Field(..., alias="job")
     cv_data: str = Field(..., alias="cv_data")
-    skill_description_map: Optional[Dict[str, str]] = Field(None, alias="skill_description_map")
+    skill_description_map: Optional[List[Dict[str, str]]] = Field(None, alias="skill_description_map")
 
     class Config:
         allow_population_by_field_name = True
