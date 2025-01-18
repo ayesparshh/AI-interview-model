@@ -122,7 +122,6 @@ class JobMatcher:
             sections = self._parse_ai_response(response)
             
             requirements = [
-                # Dynamically create RequirementMatch based on skill_map
                 RequirementMatch(
                     requirement=skill,
                     expectation=f"Required proficiency in {skill}",
@@ -131,7 +130,6 @@ class JobMatcher:
                     comment=sections['skills_comment'].get(skill, "").strip()
                 ) for skill in skill_map.keys()
             ]
-            # Add Overall Assessment
             requirements.append(
                 RequirementMatch(
                     requirement="Overall Assessment",
