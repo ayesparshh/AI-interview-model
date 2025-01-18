@@ -77,15 +77,12 @@ Skill Descriptions: {skill_descriptions}
 
 YOU MUST RESPOND EXACTLY IN THIS FORMAT:
 Overall: XX%
-Overall Profile: {overall_profile}
 Overall Comment: [Detailed comment explaining overall match percentage]
 
 Skills Match: XX%
-Skills Profile: {skills_profile}
 Skills Comment: [Detailed comment explaining skills match percentage]
 
 Experience Match: XX%
-Experience Profile: {experience_profile}
 Experience Comment: [Detailed comment explaining experience match percentage]
 
 Analysis:

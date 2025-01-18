@@ -26,10 +26,11 @@ class JobMatcher:
         words = text.strip().split()
         return ' '.join(words[:6])
 
-    def _extract_matched_fields(self, section: str, cv_data: str) -> Dict[str, Any]:
+    def _extract_matched_fields(self, section: str, cv_data: str, skill_map: Dict[str, str] = None) -> Dict[str, Any]:
         """Extract relevant fields from cv_data based on the section."""
-        if section.lower() == 'skills':
-            return {"skills": cv_data}
+        if section.lower() in (skill_map or {}):
+            # Return the skill description for this specific skill
+            return {section: skill_map[section]}
         elif section.lower() == 'experience':
             return {"experience": cv_data}
         elif section.lower() == 'overall':
@@ -112,18 +113,18 @@ class JobMatcher:
                 RequirementMatch(
                     requirement=skill,
                     expectation=f"Required proficiency in {skill}",
-                    candidateProfile=sections.get(f"{skill}_profile", {}),
-                    matchPercentage=sections.get(f"{skill}_match", 0.0),
-                    comment=sections.get(f"{skill}_comment", "")
+                    candidateProfile=self._extract_matched_fields(skill, cv_data, skill_map),
+                    matchPercentage=sections['skills_match'],
+                    comment=sections['skills_comment'].strip()
                 ) for skill in (skill_map or {}).keys()
             ]
             requirements.append(
                 RequirementMatch(
                     requirement="Overall Assessment",
                     expectation="Job Fit Analysis",
-                    candidateProfile=sections.get("overall_profile", {}),
-                    matchPercentage=sections.get('match_percentage', 0.0),
-                    comment=sections.get('overall_comment', "").strip()
+                    candidateProfile=self._extract_matched_fields("overall", cv_data),
+                    matchPercentage=sections['match_percentage'],
+                    comment=sections['overall_comment'].strip()
                 )
             )
 
