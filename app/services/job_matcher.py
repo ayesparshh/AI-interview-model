@@ -26,18 +26,6 @@ class JobMatcher:
         words = text.strip().split()
         return ' '.join(words[:6])
 
-    def _extract_matched_fields(self, section: str, cv_data: str, skill_map: Dict[str, str] = None) -> Dict[str, Any]:
-        """Extract relevant fields from cv_data based on the section."""
-        if section.lower() in (skill_map or {}):
-            # Return the skill description for this specific skill
-            return {section: skill_map[section]}
-        elif section.lower() == 'experience':
-            return {"experience": cv_data}
-        elif section.lower() == 'overall':
-            return {"summary": cv_data}
-        else:
-            return {}
-
     def _parse_ai_response(self, response: str) -> Dict[str, any]:
         sections = {
             "match_percentage": 0.0,
@@ -70,7 +58,6 @@ class JobMatcher:
                     sections['experience_comment'] = self._clean_comment(line)
 
         return sections
-
 
     async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: dict | None = None):
         try:
@@ -109,20 +96,25 @@ class JobMatcher:
 
             sections = self._parse_ai_response(response)
             
-            requirements = [
-                RequirementMatch(
-                    requirement=skill,
-                    expectation=f"Required proficiency in {skill}",
-                    candidateProfile=self._extract_matched_fields(skill, cv_data, skill_map),
-                    matchPercentage=sections['skills_match'],
-                    comment=sections['skills_comment'].strip()
-                ) for skill in (skill_map or {}).keys()
-            ]
+            requirements = []
+            if skill_map:
+                for skill in job_desc["skills"]:
+                    skill_description = skill_map.get(skill, "No description available")
+                    requirements.append(
+                        RequirementMatch(
+                            requirement=skill,
+                            expectation=f"Required proficiency in {skill}",
+                            candidateProfile=skill_description,
+                            matchPercentage=sections['skills_match'],
+                            comment=sections['skills_comment'].strip()
+                        )
+                    )
+
             requirements.append(
                 RequirementMatch(
                     requirement="Overall Assessment",
-                    expectation="Job Fit Analysis",
-                    candidateProfile=self._extract_matched_fields("overall", cv_data),
+                    expectation="Job Fit Analysis", 
+                    candidateProfile="Overall profile analysis",
                     matchPercentage=sections['match_percentage'],
                     comment=sections['overall_comment'].strip()
                 )
