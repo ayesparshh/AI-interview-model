@@ -83,6 +83,7 @@ class JobMatcher:
                             'description': description
                         }
 
+            # Modify prompt to always include skill assessments
             prompt = f"""
             {JOB_MATCH_ANALYSIS_PROMPT.format(
                 title=job_desc["title"],
@@ -95,8 +96,12 @@ class JobMatcher:
                 skill_descriptions="\n".join(f"{info['original']}: {info['description']}" 
                                         for info in parsed_skill_map.values())
             )}
+
+            IMPORTANT: YOU MUST include an Assessment for EACH skill listed above.
+            For any skill not found in CV, provide assessment: "No evidence found in CV data"
             """
 
+            # Single API request
             completion = client.chat.complete(
                 model="mistral-large-latest",
                 messages=[
@@ -123,25 +128,7 @@ class JobMatcher:
                 
                 pattern = f"Skill: {skill}.*?Assessment: (.*?)(?=Skill:|$)"
                 match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
-                
-                if not match:
-                    skill_prompt = f"Analyze skill '{skill}' in 6 words based on:\n{cv_data}\n\nSkill: {skill_description}"
-                    skill_completion = client.chat.complete(
-                        model="mistral-large-latest",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are an expert HR analyst. Provide detailed skill analysis."
-                            },
-                            {
-                                "role": "user",
-                                "content": skill_prompt
-                            }
-                        ]
-                    )
-                    skill_analysis = skill_completion.choices[0].message.content
-                else:
-                    skill_analysis = match.group(1).strip()
+                skill_analysis = match.group(1).strip() if match else "No assessment available"
                 
                 skill_pattern = f"Skill: {skill}.*?Match Percentage: (\d+)"
                 skill_match = re.search(skill_pattern, response, re.DOTALL | re.IGNORECASE)
@@ -157,11 +144,12 @@ class JobMatcher:
                     )
                 )
 
+            # Add overall assessment
             requirements.append(
                 RequirementMatch(
-                    requirement="Overall Assessment", 
+                    requirement="Overall Assessment",
                     expectation="Job Fit Analysis",
-                    candidateProfile="Overall profile analysis",
+                    candidateProfile="Overall profile analysis", 
                     matchPercentage=sections['match_percentage'],
                     comment=sections['analysis'] if sections['analysis'] else sections['overall_comment']
                 )
