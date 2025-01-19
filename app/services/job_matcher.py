@@ -15,16 +15,21 @@ class JobMatcher:
             matches = re.findall(r'(?:overall|skills?|experience)(?:[^:]*):[ ]*(\d+(?:\.\d+)?)', text.lower())
             if matches:
                 score = float(matches[0])
-                return max(85.0, min(score, 100.0))
-            return 85.0
+                return min(score, 100.0)  
+            return 0.0
         except ValueError:
-            return 85.0
+            return 0.0
 
     @staticmethod
     def _clean_comment(text: str) -> str:
         text = text.split('\nAnalysis:')[0]
         words = text.strip().split()
-        return ' '.join(words[:6])
+        cleaned_text = ' '.join(words[:6])
+        if cleaned_text.startswith("**Overall Comment:**"):
+            cleaned_text = cleaned_text.replace("**Overall Comment:**", "").strip()
+        if cleaned_text.startswith("**Skills Comment:**"):
+            cleaned_text = cleaned_text.replace("**Skills Comment:**", "").strip()
+        return cleaned_text
 
     def _parse_ai_response(self, response: str) -> Dict[str, any]:
         sections = {
@@ -61,6 +66,11 @@ class JobMatcher:
 
     async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: dict | None = None):
         try:
+            parsed_skill_map = {}
+            if skill_map:
+                for skill_dict in skill_map:
+                    parsed_skill_map.update(skill_dict)
+
             prompt = JOB_MATCH_ANALYSIS_PROMPT.format(
                 title=job_desc["title"],
                 objective=job_desc["objective"],
@@ -69,7 +79,7 @@ class JobMatcher:
                 skills=", ".join(job_desc["skills"]),
                 experience=str(job_desc["experienceRequired"]),
                 cv_data=cv_data,
-                skill_descriptions="\n".join(f"{k}: {v}" for k, v in (skill_map or {}).items())
+                skill_descriptions="\n".join(f"{k}: {v}" for k, v in parsed_skill_map.items())
             )
 
             completion = client.chat.complete(
@@ -95,11 +105,11 @@ class JobMatcher:
                 raise Exception("Empty response from AI service")
 
             sections = self._parse_ai_response(response)
-            
+        
             requirements = []
-            if skill_map:
+            if parsed_skill_map:
                 for skill in job_desc["skills"]:
-                    skill_description = skill_map.get(skill, "No description available")
+                    skill_description = parsed_skill_map.get(skill, "No description provided")
                     requirements.append(
                         RequirementMatch(
                             requirement=skill,

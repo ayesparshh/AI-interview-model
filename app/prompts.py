@@ -75,23 +75,47 @@ Candidate Details:
 CV Data: {cv_data}
 Skill Descriptions: {skill_descriptions}
 
+SCORING CRITERIA:
+
+Skills Match (0-100%):
+- 0-20%: Almost no required skills present
+- 21-40%: Some basic skills present but major gaps
+- 41-60%: Has core skills but lacks several requirements
+- 61-80%: Most required skills present with minor gaps
+- 81-100%: All or nearly all required skills present with depth
+
+Experience Match (0-100%):
+- 0-20%: No relevant experience
+- 21-40%: Some related but not direct experience
+- 41-60%: Has relevant experience but less than required
+- 61-80%: Meets experience requirements
+- 81-100%: Exceeds experience requirements
+
+Overall Match (Weighted Average):
+- Skills Match: 60% weight
+- Experience Match: 40% weight
+- Final score must reflect actual qualification gaps
+
+STRICT VALIDATION RULES:
+1. If CV Data is missing/invalid, all scores MUST be 0%
+2. Required skills must be EXPLICITLY found in CV with evidence
+3. Years of experience must be clearly verifiable
+4. Perfect scores (95-100%) should be extremely rare
+5. Use the full scoring range (0-100%)
+6. Each score requires specific evidence from CV
+
 YOU MUST RESPOND EXACTLY IN THIS FORMAT:
 Overall: XX%
-Overall Comment: [Detailed comment explaining overall match percentage]
+Overall Comment: [Evidence-based explanation with specific examples]
 
 Skills Match: XX%
-Skills Comment: [Detailed comment explaining skills match percentage]
+Skills Comment: [List specific skills found/missing with evidence]
 
 Experience Match: XX%
-Experience Comment: [Detailed comment explaining experience match percentage]
+Experience Comment: [Detail relevant experience with dates/duration]
 
 Analysis:
-[Overall detailed justification for each score]
-
-VALIDATION RULES:
-1. If CV Data is "." or empty, all scores must be 0%
-2. Skills must be explicitly mentioned in CV Data
-3. Experience must be verifiable from CV Data
+[Detailed point-by-point analysis with CV evidence]
 """
 
 FOLLOW_UP_QUESTION_PROMPT = """
