@@ -61,7 +61,7 @@ Candidate Answer: {answer}
 """
 
 JOB_MATCH_ANALYSIS_PROMPT = """
-Analyze the following job description and candidate CV data. Provide specific percentage scores along with detailed candidate profiles for each mandatory field.
+Analyze the following job description and candidate CV data. Provide specific percentage scores along with detailed scoring justification for each skill.
 
 Job Requirements:
 Title: {title}
@@ -74,6 +74,11 @@ Required Experience: {experience}
 Candidate Details:
 CV Data: {cv_data}
 Skill Descriptions: {skill_descriptions}
+
+For each skill, provide:
+1. A detailed assessment of proficiency level
+2. Evidence from CV or provided skill descriptions
+3. Justification for the scoring based on experience and projects
 
 SCORING CRITERIA:
 
@@ -106,16 +111,20 @@ STRICT VALIDATION RULES:
 
 YOU MUST RESPOND EXACTLY IN THIS FORMAT:
 Overall: XX%
-Overall Comment: [Evidence-based explanation with specific examples]
+Overall Comment: [EXACTLY 6 WORDS]
 
 Skills Match: XX%
-Skills Comment: [List specific skills found/missing with evidence]
+Skills Comment: [EXACTLY 6 WORDS]
+
+For each skill:
+Skill: [skill_name]
+Match Percentage: XX%
+Assessment: [EXACTLY 6 WORDS describing key finding]
 
 Experience Match: XX%
-Experience Comment: [Detail relevant experience with dates/duration]
+Experience Comment: [EXACTLY 6 WORDS]
 
-Analysis:
-[Detailed point-by-point analysis with CV evidence]
+Analysis: [EXACTLY 6 WORDS]
 """
 
 FOLLOW_UP_QUESTION_PROMPT = """
