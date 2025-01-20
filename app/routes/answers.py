@@ -88,10 +88,7 @@ async def score_answers(request: ScoringRequest = Body(...)):
 
         avg_score = total_score // len(request.questionAnswerPairs)
         
-        return AnswerScoringResponse(
-            scores=scores,
-            overall_score=avg_score
-        )
+        return AnswerScoringResponse(root=scores)
 
     except Exception as e:
         logging.error(f"Error in score_answers: {str(e)}")

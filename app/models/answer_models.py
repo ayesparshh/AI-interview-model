@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 from typing import List
 
 class AnswerPair(BaseModel):
@@ -13,6 +13,5 @@ class AnswerScore(BaseModel):
     score: int
     comment: str
 
-class AnswerScoringResponse(BaseModel):
-    scores: List[AnswerScore]
-    overall_score: int
+class AnswerScoringResponse(RootModel):
+    root: List[AnswerScore]
