@@ -61,6 +61,7 @@ async def score_answers(request: ScoringRequest = Body(...)):
             total_score += score
             
             scores.append(AnswerScore(
+                id=answer_pair.id,
                 question=answer_pair.question,
                 answer=answer_pair.answer, 
                 score=score,
