@@ -1,3 +1,5 @@
+import logging
+import re
 from fastapi import APIRouter, HTTPException, Body
 from typing import List, Tuple
 from pydantic import BaseModel
@@ -8,7 +10,7 @@ from app.config import client, model
 router = APIRouter()
 
 class ScoringRequest(BaseModel):
-    answers: List[AnswerPair]
+    questionAnswerPairs: List[AnswerPair]
 
 def parse_scoring_response(response_text: str) -> Tuple[int, str]:
     """Parse the scoring response from the LLM to extract score and comment"""
@@ -35,40 +37,56 @@ def parse_scoring_response(response_text: str) -> Tuple[int, str]:
 @router.post("/score-answers", response_model=AnswerScoringResponse)
 async def score_answers(request: ScoringRequest = Body(...)):
     try:
+        qa_pairs = "\n\n".join([
+            f"Question {i+1}: {qa.question}\nAnswer {i+1}: {qa.answer}"
+            for i, qa in enumerate(request.questionAnswerPairs)
+        ])
+        
+        completion = client.chat.complete(
+            model=model,
+            messages=[
+                {
+                    "role": "system", 
+                    "content": """You are an expert technical interviewer. Score multiple answers between 0-10.
+                    For each Q&A pair, provide score and comment in this exact format:
+                    Q1_SCORE: [number]
+                    Q1_COMMENT: [brief judging comment in 6 words]
+                    Q2_SCORE: [number]
+                    Q2_COMMENT: [brief judging comment in 6 words]
+                    And so on..."""
+                },
+                {
+                    "role": "user",
+                    "content": f"Evaluate all Q&A pairs according to these criteria:\n{ANSWER_SCORING_PROMPT}\n\nQ&A Pairs to Evaluate:\n{qa_pairs}"
+                }
+            ]
+        )
+        
+        response_text = completion.choices[0].message.content
         scores = []
         total_score = 0
         
-        for answer_pair in request.answers:
-            completion = client.chat.complete(
-                model=model,
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": "You are an expert technical interviewer. Score answers between 0-10."
-                    },
-                    {
-                        "role": "user",
-                        "content": ANSWER_SCORING_PROMPT.format(
-                            question=answer_pair.question,
-                            answer=answer_pair.answer
-                        )
-                    }
-                ]
-            )
+        for i, answer_pair in enumerate(request.questionAnswerPairs):
+            score_pattern = rf"Q{i+1}_SCORE:\s*(\d+)"
+            comment_pattern = rf"Q{i+1}_COMMENT:\s*(.+?)(?=Q\d+_SCORE:|$)"
             
-            response_text = completion.choices[0].message.content
-            score, comment = parse_scoring_response(response_text)
+            score_match = re.search(score_pattern, response_text)
+            comment_match = re.search(comment_pattern, response_text, re.DOTALL)
+            
+            score = int(score_match.group(1)) if score_match else 0
+            score = max(0, min(score, 10))
+            comment = ' '.join((comment_match.group(1) if comment_match else "No comment provided").split()[:6])
+            
             total_score += score
-            
             scores.append(AnswerScore(
                 id=answer_pair.id,
                 question=answer_pair.question,
-                answer=answer_pair.answer, 
+                answer=answer_pair.answer,
                 score=score,
                 comment=comment
             ))
-        
-        avg_score = total_score // len(request.answers)
+
+        avg_score = total_score // len(request.questionAnswerPairs)
         
         return AnswerScoringResponse(
             scores=scores,
@@ -76,4 +94,5 @@ async def score_answers(request: ScoringRequest = Body(...)):
         )
 
     except Exception as e:
+        logging.error(f"Error in score_answers: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
