@@ -8,7 +8,7 @@ matcher = JobMatcher()
 @router.post("/analyze-match", response_model=JobMatchResponse)
 async def analyze_job_match(request: JobMatchRequest):
     try:
-        overall_match, requirements = await matcher.analyze_match(
+        overall_match, requirements, overall_comment = await matcher.analyze_match(
             request.job.dict(),
             request.cv_data,
             request.skill_description_map
@@ -16,6 +16,7 @@ async def analyze_job_match(request: JobMatchRequest):
         
         return JobMatchResponse(
             overallMatch=overall_match,
+            overallComment=overall_comment,
             requirements=requirements
         )
     except Exception as e:

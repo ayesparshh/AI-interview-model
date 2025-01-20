@@ -157,17 +157,11 @@ class JobMatcher:
                     )
                 )
 
-            requirements.append(
-                RequirementMatch(
-                    requirement="Overall Assessment", 
-                    expectation="Job Fit Analysis",
-                    candidateProfile="Overall profile analysis",
-                    matchPercentage=sections['match_percentage'],
-                    comment=sections['analysis'] if sections['analysis'] else sections['overall_comment']
-                )
+            return (
+                sections['match_percentage'], 
+                requirements,
+                sections['analysis'] if sections['analysis'] else sections['overall_comment']
             )
-
-            return sections['match_percentage'], requirements
 
         except Exception as e:
             self.logger.error(f"Analysis failed: {str(e)}")
