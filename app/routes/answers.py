@@ -38,44 +38,51 @@ def parse_scoring_response(response_text: str) -> Tuple[int, str]:
 async def score_answers(request: ScoringRequest = Body(...)):
     try:
         qa_pairs = "\n\n".join([
-            f"Question {i+1}: {qa.question}\nAnswer {i+1}: {qa.answer}"
+            f"Question {i+1}: {qa.question}\nAnswer {i+1}: {qa.answer}" 
             for i, qa in enumerate(request.questionAnswerPairs)
         ])
         
+        system_prompt = """You are an expert technical interviewer. Analyze all Q&A pairs and score them.
+
+        For each answer, provide scoring in exactly this format (no markdown or extra formatting):
+
+        Q1_SCORE: [number 0-10]
+        Q1_COMMENT: [brief comment]
+        Q2_SCORE: [number 0-10]
+        Q2_COMMENT: [brief comment]
+        etc.
+
+        Scoring criteria:
+        - Technical depth (0-4 points)
+        - Answer completeness (0-3 points)
+        - Communication clarity (0-2 points)
+        - Practical examples (0-1 point)
+
+        Keep comments brief and factual. No special characters or formatting."""
+
         completion = client.chat.complete(
             model=model,
             messages=[
-                {
-                    "role": "system", 
-                    "content": """You are an expert technical interviewer. Score multiple answers between 0-10.
-                    For each Q&A pair, provide score and comment in this exact format:
-                    Q1_SCORE: [number]
-                    Q1_COMMENT: [brief judging comment in 6 words]
-                    Q2_SCORE: [number]
-                    Q2_COMMENT: [brief judging comment in 6 words]
-                    And so on..."""
-                },
-                {
-                    "role": "user",
-                    "content": f"Evaluate all Q&A pairs according to these criteria:\n{ANSWER_SCORING_PROMPT}\n\nQ&A Pairs to Evaluate:\n{qa_pairs}"
-                }
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Analyze these Q&A pairs:\n\n{qa_pairs}"}
             ]
         )
         
-        response_text = completion.choices[0].message.content
+        response_text = completion.choices[0].message.content.strip()
         scores = []
         total_score = 0
         
         for i, answer_pair in enumerate(request.questionAnswerPairs):
             score_pattern = rf"Q{i+1}_SCORE:\s*(\d+)"
-            comment_pattern = rf"Q{i+1}_COMMENT:\s*(.+?)(?=Q\d+_SCORE:|$)"
+            comment_pattern = rf"Q{i+1}_COMMENT:\s*([^\n]+)"
             
-            score_match = re.search(score_pattern, response_text)
-            comment_match = re.search(comment_pattern, response_text, re.DOTALL)
+            score_match = re.search(score_pattern, response_text, re.IGNORECASE)
+            comment_match = re.search(comment_pattern, response_text, re.IGNORECASE)
             
             score = int(score_match.group(1)) if score_match else 0
             score = max(0, min(score, 10))
-            comment = ' '.join((comment_match.group(1) if comment_match else "No comment provided").split()[:6])
+            comment = comment_match.group(1).strip() if comment_match else "No comment provided"
+            comment = ' '.join(comment.split()[:6])
             
             total_score += score
             scores.append(AnswerScore(
@@ -86,7 +93,7 @@ async def score_answers(request: ScoringRequest = Body(...)):
                 comment=comment
             ))
 
-        avg_score = total_score // len(request.questionAnswerPairs)
+        avg_score = total_score // len(request.questionAnswerPairs) if request.questionAnswerPairs else 0
         
         return AnswerScoringResponse(root=scores)
 
