@@ -22,14 +22,16 @@ class JobMatcher:
 
     @staticmethod
     def _clean_comment(text: str) -> str:
-        text = text.split('\nAnalysis:')[0]
-        if text.startswith("**Overall Comment:**"):
-            text = text.replace("**Overall Comment:**", "").strip()
-        if text.startswith("**Skills Comment:**"):
-            text = text.replace("**Skills Comment:**", "").strip()
-
-        words = text.split()
-        return ' '.join(words[:6]).strip()
+        # Remove any markdown formatting and newlines
+        text = re.sub(r'\*\*.*?\*\*:', '', text)
+        text = text.replace('\n', ' ').strip()
+        
+        # Remove any analysis prefixes
+        text = text.split('Analysis:')[-1].strip()
+        
+        # Limit to meaningful first sentence
+        sentences = text.split('.')
+        return sentences[0].strip() if sentences else text.strip()
 
     def _parse_ai_response(self, response: str) -> Dict[str, any]:
         sections = {
@@ -61,15 +63,13 @@ class JobMatcher:
                 current_section = 'analysis'
             elif line.strip():
                 if current_section == 'analysis':
-                    analysis_text.append(line.strip())
-                elif current_section == 'overall':
-                    sections['overall_comment'] = self._clean_comment(line)
-                elif current_section == 'skills':
-                    sections['skills_comment'] = self._clean_comment(line)
-                elif current_section == 'experience':
-                    sections['experience_comment'] = self._clean_comment(line)
+                    clean_line = line.strip()
+                    if clean_line and not clean_line.lower().startswith(('overall:', 'skills:', 'experience:')):
+                        analysis_text.append(clean_line)
+                elif current_section in ['overall', 'skills', 'experience']:
+                    sections[f'{current_section}_comment'] = self._clean_comment(line)
 
-        sections['analysis'] = ' '.join(analysis_text)
+        sections['analysis'] = ' '.join(analysis_text).strip()
         return sections
 
     async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: List[Dict[str, str]] | None = None):
@@ -128,7 +128,7 @@ class JobMatcher:
                 
                 pattern = f"Skill: {skill}.*?Assessment: (.*?)(?=Skill:|$)"
                 match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
-                skill_analysis = match.group(1).strip() if match else "No assessment available"
+                skill_analysis = match.group(1).strip().split('\n')[0] if match else "No assessment available"
                 
                 skill_pattern = f"Skill: {skill}.*?Match Percentage: (\d+)"
                 skill_match = re.search(skill_pattern, response, re.DOTALL | re.IGNORECASE)
@@ -140,18 +140,19 @@ class JobMatcher:
                         expectation=f"Required proficiency in {skill}",
                         candidateProfile=skill_description,
                         matchPercentage=skill_percentage,
-                        comment=skill_analysis
+                        comment=skill_analysis.strip()
                     )
                 )
 
-            # Add overall assessment
+            # Add overall assessment with cleaner comment
+            final_analysis = sections['analysis'] if sections['analysis'] else sections['overall_comment']
             requirements.append(
                 RequirementMatch(
                     requirement="Overall Assessment",
                     expectation="Job Fit Analysis",
                     candidateProfile="Overall profile analysis", 
                     matchPercentage=sections['match_percentage'],
-                    comment=sections['analysis'] if sections['analysis'] else sections['overall_comment']
+                    comment=self._clean_comment(final_analysis)
                 )
             )
 

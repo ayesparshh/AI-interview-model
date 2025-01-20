@@ -61,70 +61,53 @@ Candidate Answer: {answer}
 """
 
 JOB_MATCH_ANALYSIS_PROMPT = """
-Analyze the following job description and candidate CV data. Provide specific percentage scores along with detailed scoring justification for each skill.
+Analyze the following job requirements and CV data:
 
-Job Requirements:
-Title: {title}
+Job Title: {title}
 Objective: {objective}
 Goals: {goals}
 Description: {description}
 Required Skills: {skills}
 Required Experience: {experience}
 
-Candidate Details:
-CV Data: {cv_data}
-Skill Descriptions: {skill_descriptions}
+CV Data:
+{cv_data}
+
+Skill Descriptions:
+{skill_descriptions}
+
+Please provide:
+1. Overall Match Score (0-100)
+2. Skills Match Score (0-100)
+3. Experience Match Score (0-100)
 
 For each skill, provide:
-1. A detailed assessment of proficiency level
-2. Evidence from CV or provided skill descriptions
-3. Justification for the scoring based on experience and projects
+- Match percentage (0-100)
+- One clear, concise sentence assessment
 
-SCORING CRITERIA:
+Guidelines:
+- Keep all comments brief and specific
+- Avoid using newlines in comments
+- Focus on key points only
+- Use simple, direct language
 
-Skills Match (0-100%):
-- 0-20%: Almost no required skills present
-- 21-40%: Some basic skills present but major gaps
-- 41-60%: Has core skills but lacks several requirements
-- 61-80%: Most required skills present with minor gaps
-- 81-100%: All or nearly all required skills present with depth
+Format your response as:
+Overall: [score]
+[One sentence overall assessment]
 
-Experience Match (0-100%):
-- 0-20%: No relevant experience
-- 21-40%: Some related but not direct experience
-- 41-60%: Has relevant experience but less than required
-- 61-80%: Meets experience requirements
-- 81-100%: Exceeds experience requirements
+Skills Match: [score]
+[One sentence skills summary]
 
-Overall Match (Weighted Average):
-- Skills Match: 60% weight
-- Experience Match: 40% weight
-- Final score must reflect actual qualification gaps
+Experience Match: [score]
+[One sentence experience assessment]
 
-STRICT VALIDATION RULES:
-1. If CV Data is missing/invalid, all scores MUST be 0%
-2. Required skills must be EXPLICITLY found in CV with evidence
-3. Years of experience must be clearly verifiable
-4. Perfect scores (95-100%) should be extremely rare
-5. Use the full scoring range (0-100%)
-6. Each score requires specific evidence from CV
-
-YOU MUST RESPOND EXACTLY IN THIS FORMAT:
-Overall: XX%
-Overall Comment: [EXACTLY 6 WORDS]
-
-Skills Match: XX%
-Skills Comment: [EXACTLY 6 WORDS]
+Analysis:
+[Brief overall analysis]
 
 For each skill:
-Skill: [skill_name]
-Match Percentage: XX%
-Assessment: [EXACTLY 6 WORDS describing key finding]
-
-Experience Match: XX%
-Experience Comment: [EXACTLY 6 WORDS]
-
-Analysis: [EXACTLY 6 WORDS]
+Skill: [skill name]
+Match Percentage: [score]
+Assessment: [one clear sentence]
 """
 
 FOLLOW_UP_QUESTION_PROMPT = """
