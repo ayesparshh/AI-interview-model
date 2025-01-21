@@ -20,7 +20,6 @@ def parse_scoring_response(response_text: str) -> Tuple[int, str]:
             return 0, "Could not parse score from response"
             
         score = int(score_match.group(1))
-        # Enforce 0-10 range
         score = max(0, min(score, 10))
         
         comment_match = re.search(r'comment:\s*(.*)', response_text.lower())
@@ -73,7 +72,6 @@ async def score_answers(request: ScoringRequest = Body(...)):
                 cm = re.search(comment_pattern, block_text, re.IGNORECASE)
                 
                 raw_score = int(sm.group(1)) if sm else 0
-                # Enforce 0-10 range
                 raw_score = max(0, min(raw_score, 10))
                 
                 raw_comment = cm.group(1).strip() if cm else "No comment provided"
