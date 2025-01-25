@@ -21,7 +21,6 @@ class EmbeddingGenerator:
         self.model_id = "sentence-transformers/all-MiniLM-L6-v2"
         self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model_id}"
         self.headers = {"Authorization": f"Bearer {api_token}"}
-        self.output_dir = Path("embeddings_output")
         self.output_dir.mkdir(exist_ok=True)
 
     @retry(tries=3, delay=10, backoff=2, logger=logger)

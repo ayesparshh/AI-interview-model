@@ -36,19 +36,30 @@ def extract_structured_resume_data(raw_resume: str) -> StructuredResumeData:
                         {
                             "role": "system",
                             "content": """You are a resume parser. Extract and normalize information into a consistent format.
+                            Pay special attention to work experience dates to calculate total years.
+                            For each work experience entry, extract start and end dates to calculate duration.
                             Return ONLY a JSON object with these exact fields:
-                            - experience: total years of experience as number
+                            - experience: total years of experience as number (calculate from work history dates) or if mentioned in resume
                             - skills: array of ALL skills (languages, frameworks, tools, etc)
-                            - qualifications: array of education details
-                            - responsibilities: array of work achievements"""
+                            - qualifications: array of education details  
+                            - responsibilities: array of work achievements
+                            
+                            For experience calculation:
+                            - Use actual dates from work history
+                            - Sum up all periods of employment
+                            - For current roles, calculate up to present date
+                            - Round to nearest year"""
                         },
                         {
-                            "role": "user",
-                            "content": f"""Extract these details from the resume:
-                            1. Total years of experience 
+                            "role": "user", 
+                            "content": f"""Carefully analyze the resume and extract:
+                            1. Total years of experience (calculate from actual work history dates)
                             2. ALL skills as a flat array (combine programming, frameworks, tools etc)
                             3. Education qualifications with CGPAs
                             4. Key responsibilities and achievements
+                            
+                            Important: For experience, look for date patterns like MM/YYYY or phrases indicating employment periods.
+                            Calculate total years based on start and end dates of each role.
 
                             Resume text: {raw_resume}"""
                         }
