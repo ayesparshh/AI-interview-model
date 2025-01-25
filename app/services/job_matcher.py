@@ -125,23 +125,35 @@ class JobMatcher:
                 match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
                 
                 if not match:
-                    skill_prompt = f"Analyze skill '{skill}' in 6 words based on:\n{cv_data}\n\nSkill: {skill_description}"
+                    skill_prompt = f"""Analyze '{skill}' in EXACTLY 6 words.
+                Match score: {skill_percentage}%
+                CV: {cv_data}
+                Description: {skill_description}
+
+                RULES:
+                1. Return ONLY 6 words separated by spaces
+                2. Words should reflect match score
+                3. Focus on actual evidence from CV
+                4. No punctuation or special characters
+                """
                     skill_completion = client.chat.complete(
                         model="mistral-large-latest",
                         messages=[
                             {
                                 "role": "system",
-                                "content": "You are an expert HR analyst. Provide detailed skill analysis."
+                                "content": "You are an HR analyst. Respond with exactly 6 words."
                             },
                             {
                                 "role": "user",
                                 "content": skill_prompt
                             }
-                        ]
+                        ],
+                        temperature=0.1,
+                        max_tokens=50
                     )
-                    skill_analysis = skill_completion.choices[0].message.content
+                    skill_analysis = ' '.join(skill_completion.choices[0].message.content.strip().split()[:6])
                 else:
-                    skill_analysis = match.group(1).strip()
+                    skill_analysis = ' '.join(match.group(1).strip().split()[:6])
                 
                 skill_pattern = f"Skill: {skill}.*?Match Percentage: (\d+)"
                 skill_match = re.search(skill_pattern, response, re.DOTALL | re.IGNORECASE)
