@@ -33,4 +33,5 @@ class RequirementMatch(BaseModel):
 
 class JobMatchResponse(BaseModel):
     overallMatch: float
+    overallComment: str
     requirements: List[RequirementMatch]

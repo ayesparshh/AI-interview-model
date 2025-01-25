@@ -1,8 +1,7 @@
-# from app.db.database import engine
-# from app.db.models import Base
+from app.db.database import init_db
 
-# def init_db():
-#     Base.metadata.create_all(bind=engine)
+from app.models.embedding_models import Candidate, JobDescription
 
-# if __name__ == "__main__":
-#     init_db()
+if __name__ == "__main__":
+    init_db()
+    print("Database initialized successfully.")
