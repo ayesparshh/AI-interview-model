@@ -181,7 +181,7 @@ async def process_resume(
 
         return EmbeddingResponse(
             userId=request.userId,
-            embeddings=embedding_vector,
+            embedding=embedding_vector,
         )
     except Exception as e:
         logger.error(f"Error in process_resume: {str(e)}")

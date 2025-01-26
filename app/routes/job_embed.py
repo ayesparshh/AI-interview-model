@@ -93,7 +93,7 @@ async def process_job_description(
 
         return EmbeddingResponseJob(
             jobId=request.jobId,
-            embeddings=embedding_vector,
+            embedding=embedding_vector,
         )
     except Exception as e:
         logger.error(f"Error in process_job_description: {str(e)}")
