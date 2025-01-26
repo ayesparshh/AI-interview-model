@@ -8,12 +8,10 @@ import datetime
 class EmbeddingResponse(BaseModel):
     userId: str
     embeddings: List[float]
-    status: str
 
 class EmbeddingResponseJob(BaseModel):
     jobId: str
     embeddings: List[float]
-    status: str
 
 class Candidate(Base):
     __tablename__ = "candidates"

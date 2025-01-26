@@ -23,7 +23,7 @@ class StructuredResumeData(BaseModel):
     responsibilities: str = Field(default="")
 
 class ResumeRequest(BaseModel):
-    resumeText: str
+    cv_text: str
     userId: str
 
 def extract_structured_resume_data(raw_resume: str) -> StructuredResumeData:
@@ -148,7 +148,7 @@ async def process_resume(
     db: Session = Depends(get_db)
 ):
     try:
-        structured_data = extract_structured_resume_data(request.resumeText)
+        structured_data = extract_structured_resume_data(request.cv_text)
         
         formatted_resume_text = f"""{structured_data.title} {structured_data.experience} {format_skills(structured_data.skills)} {format_qualifications(structured_data.qualifications)} {structured_data.location} {format_responsibilities(structured_data.responsibilities)}""".strip()
         
@@ -182,7 +182,6 @@ async def process_resume(
         return EmbeddingResponse(
             userId=request.userId,
             embeddings=embedding_vector,
-            status="success"
         )
     except Exception as e:
         logger.error(f"Error in process_resume: {str(e)}")
