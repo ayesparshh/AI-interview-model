@@ -23,7 +23,7 @@ class JobDescription(BaseModel):
     experienceRequired: int
 
 class JobDescriptionRequest(BaseModel):
-    jobData: JobDescription
+    job: JobDescription
     jobId: str
 
 def format_job_data_for_embedding(job_data: JobDescription) -> str:
@@ -63,7 +63,7 @@ async def process_job_description(
     db: Session = Depends(get_db)
 ):
     try:
-        formatted_job_text = format_job_data_for_embedding(request.jobData)
+        formatted_job_text = format_job_data_for_embedding(request.job)
         
         logger.info("Text used for embeddings:")
         logger.info(formatted_job_text)
@@ -94,7 +94,6 @@ async def process_job_description(
         return EmbeddingResponseJob(
             jobId=request.jobId,
             embeddings=embedding_vector,
-            status="success"
         )
     except Exception as e:
         logger.error(f"Error in process_job_description: {str(e)}")
