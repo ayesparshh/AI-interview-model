@@ -133,8 +133,8 @@ class JobMatcher:
                     next((k for k in parsed_skill_map if k in skill.lower() or skill.lower() in k), '')
                 )
                 skill_description = skill_info['description'] if skill_info else "No description provided"
-                
                 skill_percentage, skill_analysis = self._extract_skill_info(response, skill)
+
                 
                 requirements.append(
                     RequirementMatch(
@@ -143,6 +143,7 @@ class JobMatcher:
                         candidateProfile=skill_description,
                         matchPercentage=skill_percentage or sections['skills_match'],
                         comment=skill_analysis
+
                     )
                 )
 
@@ -150,6 +151,7 @@ class JobMatcher:
                 sections['match_percentage'], 
                 requirements,
                 sections['analysis'] if sections['analysis'] else sections['overall_comment']
+
             )
 
         except Exception as e:
