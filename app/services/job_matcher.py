@@ -22,14 +22,16 @@ class JobMatcher:
 
     @staticmethod
     def _clean_comment(text: str) -> str:
-        text = text.split('\nAnalysis:')[0]
-        if text.startswith("**Overall Comment:**"):
-            text = text.replace("**Overall Comment:**", "").strip()
-        if text.startswith("**Skills Comment:**"):
-            text = text.replace("**Skills Comment:**", "").strip()
-
-        words = text.split()
-        return ' '.join(words[:6]).strip()
+        # Remove any markdown formatting and newlines
+        text = re.sub(r'\*\*.*?\*\*:', '', text)
+        text = text.replace('\n', ' ').strip()
+        
+        # Remove any analysis prefixes
+        text = text.split('Analysis:')[-1].strip()
+        
+        # Limit to meaningful first sentence
+        sentences = text.split('.')
+        return sentences[0].strip() if sentences else text.strip()
 
     def _parse_ai_response(self, response: str) -> Dict[str, any]:
         sections = {
@@ -61,16 +63,26 @@ class JobMatcher:
                 current_section = 'analysis'
             elif line.strip():
                 if current_section == 'analysis':
-                    analysis_text.append(line.strip())
-                elif current_section == 'overall':
-                    sections['overall_comment'] = self._clean_comment(line)
-                elif current_section == 'skills':
-                    sections['skills_comment'] = self._clean_comment(line)
-                elif current_section == 'experience':
-                    sections['experience_comment'] = self._clean_comment(line)
+                    clean_line = line.strip()
+                    if clean_line and not clean_line.lower().startswith(('overall:', 'skills:', 'experience:')):
+                        analysis_text.append(clean_line)
+                elif current_section in ['overall', 'skills', 'experience']:
+                    sections[f'{current_section}_comment'] = self._clean_comment(line)
 
-        sections['analysis'] = ' '.join(analysis_text)
+        sections['analysis'] = ' '.join(analysis_text).strip()
         return sections
+
+    def _extract_skill_info(self, response: str, skill: str) -> Tuple[float, str]:
+        skill_pattern = fr"Skill:\s*{re.escape(skill)}.*?Match Percentage:\s*(\d+)"
+        analysis_pattern = fr"Skill:\s*{re.escape(skill)}.*?Assessment:\s*(.*?)(?=(?:Skill:|$))"
+        
+        skill_match = re.search(skill_pattern, response, re.DOTALL | re.IGNORECASE)
+        analysis_match = re.search(analysis_pattern, response, re.DOTALL | re.IGNORECASE)
+        
+        percentage = float(skill_match.group(1)) if skill_match else 0.0
+        analysis = ' '.join(analysis_match.group(1).strip().split()[:6]) if analysis_match else "No specific assessment available"
+        
+        return percentage, analysis
 
     async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: List[Dict[str, str]] | None = None):
         try:
@@ -108,7 +120,8 @@ class JobMatcher:
                         "role": "user", 
                         "content": prompt
                     }
-                ]
+                ],
+                temperature=0.1
             )
             
             response = completion.choices[0].message.content
@@ -121,50 +134,14 @@ class JobMatcher:
                 )
                 skill_description = skill_info['description'] if skill_info else "No description provided"
                 
-                pattern = f"Skill: {skill}.*?Assessment: (.*?)(?=Skill:|$)"
-                match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
-                
-                if not match:
-                    skill_prompt = f"""Analyze '{skill}' in EXACTLY 6 words.
-                Match score: {skill_percentage}%
-                CV: {cv_data}
-                Description: {skill_description}
-
-                RULES:
-                1. Return ONLY 6 words separated by spaces
-                2. Words should reflect match score
-                3. Focus on actual evidence from CV
-                4. No punctuation or special characters
-                """
-                    skill_completion = client.chat.complete(
-                        model="mistral-large-latest",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are an HR analyst. Respond with exactly 6 words."
-                            },
-                            {
-                                "role": "user",
-                                "content": skill_prompt
-                            }
-                        ],
-                        temperature=0.1,
-                        max_tokens=50
-                    )
-                    skill_analysis = ' '.join(skill_completion.choices[0].message.content.strip().split()[:6])
-                else:
-                    skill_analysis = ' '.join(match.group(1).strip().split()[:6])
-                
-                skill_pattern = f"Skill: {skill}.*?Match Percentage: (\d+)"
-                skill_match = re.search(skill_pattern, response, re.DOTALL | re.IGNORECASE)
-                skill_percentage = float(skill_match.group(1)) if skill_match else sections['skills_match']
+                skill_percentage, skill_analysis = self._extract_skill_info(response, skill)
                 
                 requirements.append(
                     RequirementMatch(
                         requirement=skill,
                         expectation=f"Required proficiency in {skill}",
                         candidateProfile=skill_description,
-                        matchPercentage=skill_percentage,
+                        matchPercentage=skill_percentage or sections['skills_match'],
                         comment=skill_analysis
                     )
                 )
