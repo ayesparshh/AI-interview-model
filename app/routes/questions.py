@@ -2,8 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
 from typing import List, Dict, Optional, Any
 import json
 import logging
-from litellm import Field
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ..models import (
     QuestionGenerationResponse, 
     QuestionWithTime,
