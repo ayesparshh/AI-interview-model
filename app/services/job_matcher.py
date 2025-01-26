@@ -107,6 +107,18 @@ class JobMatcher:
                 skill_descriptions="\n".join(f"{info['original']}: {info['description']}" 
                                         for info in parsed_skill_map.values())
             )}
+
+            CRITICAL: For EACH skill listed above, you MUST provide:
+            1. Skill: [skill_name]
+            2. Match Percentage: [0-100]
+            3. Assessment: [Exactly 6 words describing the match quality]
+
+            Example format for each skill:
+            Skill: Python
+            Match Percentage: 85
+            Assessment: Strong experience with advanced Python projects
+
+            Do not skip any skills. Every skill must have all 3 components.
             """
 
             completion = client.chat.complete(
