@@ -137,15 +137,15 @@ async def match_candidates(
         ).fetchall()
 
         candidates = [{
-            "user_id": row[0],
-            "resume_text": row[1],
+            "userId": row[0],
+            "resumeText": row[1],
             "similarity": float(row[2]) 
         } for row in results]
 
         logger.info(f"Found {len(candidates)} matching candidates")
         
         return MatchResponse(
-            job_id=job_id,
+            jobId=job_id,
             candidates=candidates
         )
 

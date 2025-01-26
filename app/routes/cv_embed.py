@@ -23,7 +23,7 @@ class StructuredResumeData(BaseModel):
     responsibilities: str = Field(default="")
 
 class ResumeRequest(BaseModel):
-    cv_text: str
+    cvText: str
     userId: str
 
 def extract_structured_resume_data(raw_resume: str) -> StructuredResumeData:
@@ -148,7 +148,7 @@ async def process_resume(
     db: Session = Depends(get_db)
 ):
     try:
-        structured_data = extract_structured_resume_data(request.cv_text)
+        structured_data = extract_structured_resume_data(request.cvText)
         
         formatted_resume_text = f"""{structured_data.title} {structured_data.experience} {format_skills(structured_data.skills)} {format_qualifications(structured_data.qualifications)} {structured_data.location} {format_responsibilities(structured_data.responsibilities)}""".strip()
         
