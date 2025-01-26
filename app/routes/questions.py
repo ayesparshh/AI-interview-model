@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
 from typing import List, Dict, Optional, Any
 import json
 import logging
+from litellm import Field
 from pydantic import BaseModel
 from ..models import (
     QuestionGenerationResponse, 
@@ -106,16 +107,21 @@ class JobData(BaseModel):
     title: str
     objective: str
     goals: str 
-    jobDescription: str
+    jobDescription: str = Field(..., alias="jobDescription")
     skills: List[str]
-    experienceRequired: int   
+    experienceRequired: int
 
 class QuestionGenerationRequest(BaseModel):
-    cv_data: str 
-    skill_description_map: Dict[str, str]
-    job_data: JobData
-    previous_questions: List[Dict[str, str]] = []
-    expected_questions_config: List[Dict[str, Any]]
+    cv_data: str = Field(..., alias="cvParsedData")
+    skill_description_map: Dict[str, str] = Field(..., alias="skillDescriptionMap")
+    job_data: JobData = Field(..., alias="job")
+    previous_questions: List[Dict[str, str]] = Field(default=[], alias="previousQuestions")
+    expected_questions_config: List[Dict[str, Any]] = Field(..., alias="expectedQuestionsConfig")
+
+    class Config:
+        allow_population_by_field_name = True
+        populate_by_name = True
+        arbitrary_types_allowed = True
 
 @router.post("/generate-questions", response_model=QuestionGenerationResponse)
 async def generate_questions(request: QuestionGenerationRequest = Body(...)):
@@ -127,7 +133,7 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
                 previous_questions_text += f"Q: {qa['question']}\nA: {qa['answer']}\n"
 
         job_context = f"""
-        Job Title: {request.job_data.title}
+        Job Title: {request.job_data.title}  # Updated field name
         Objective: {request.job_data.objective}
         Goals: {request.job_data.goals}
         Description: {request.job_data.jobDescription}
@@ -142,32 +148,32 @@ async def generate_questions(request: QuestionGenerationRequest = Body(...)):
         tech_context = f"""
         Following the data you need to consider when generating questions:
         CV Background:
-        {request.cv_data}
+        {request.cv_data}  # Updated field name
         Job Details:
         {job_context}
         User's Experience in required Skills:
         {skill_context}
-        Previously Asked Questions during this Interview (Take these into context when asking future questions) (You may ignore questions which were not answered):
+        Previously Asked Questions during this Interview:
         {previous_questions_text}
         """
 
         completion = client.chat.complete(
-    model=model,
-    messages=[{
-        "role": "system", 
-        "content": f"""You are an expert interviewer specializing in {request.expected_questions_config[0]['category']} questions.
-        Generate questions that are strictly {request.expected_questions_config[0]['category']} in nature.
-        Do not mix technical and behavioral aspects unless specifically asked for."""
-    }, {
-        "role": "user",
-        "content": create_structured_prompt(
-            tech_context, 
-            request.expected_questions_config[0]['category'],
-            len(request.expected_questions_config),
-            request.expected_questions_config
+            model=model,
+            messages=[{
+                "role": "system", 
+                "content": f"""You are an expert interviewer specializing in {request.expected_questions_config[0]['category']} questions.
+                Generate questions that are strictly {request.expected_questions_config[0]['category']} in nature.
+                Do not mix technical and behavioral aspects unless specifically asked for."""
+            }, {
+                "role": "user",
+                "content": create_structured_prompt(
+                    tech_context, 
+                    request.expected_questions_config[0]['category'],
+                    len(request.expected_questions_config),
+                    request.expected_questions_config
+                )
+            }]
         )
-    }]
-)
 
         response_content = completion.choices[0].message.content
         questions_data = json.loads(clean_json_string(response_content))

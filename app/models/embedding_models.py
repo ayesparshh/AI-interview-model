@@ -32,5 +32,5 @@ class JobDescription(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
 class MatchResponse(BaseModel):
-    job_id: str
+    jobId: str
     candidates: List[Dict]
