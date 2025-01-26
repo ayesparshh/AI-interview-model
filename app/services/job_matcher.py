@@ -72,6 +72,18 @@ class JobMatcher:
         sections['analysis'] = ' '.join(analysis_text).strip()
         return sections
 
+    def _extract_skill_info(self, response: str, skill: str) -> Tuple[float, str]:
+        skill_pattern = fr"Skill:\s*{re.escape(skill)}.*?Match Percentage:\s*(\d+)"
+        analysis_pattern = fr"Skill:\s*{re.escape(skill)}.*?Assessment:\s*(.*?)(?=(?:Skill:|$))"
+        
+        skill_match = re.search(skill_pattern, response, re.DOTALL | re.IGNORECASE)
+        analysis_match = re.search(analysis_pattern, response, re.DOTALL | re.IGNORECASE)
+        
+        percentage = float(skill_match.group(1)) if skill_match else 0.0
+        analysis = ' '.join(analysis_match.group(1).strip().split()[:6]) if analysis_match else "No specific assessment available"
+        
+        return percentage, analysis
+
     async def analyze_match(self, job_desc: dict, cv_data: str, skill_map: List[Dict[str, str]] | None = None):
         try:
             parsed_skill_map = {}
@@ -108,7 +120,8 @@ class JobMatcher:
                         "role": "user", 
                         "content": prompt
                     }
-                ]
+                ],
+                temperature=0.1
             )
             
             response = completion.choices[0].message.content
@@ -120,40 +133,17 @@ class JobMatcher:
                     next((k for k in parsed_skill_map if k in skill.lower() or skill.lower() in k), '')
                 )
                 skill_description = skill_info['description'] if skill_info else "No description provided"
-                
-                pattern = f"Skill: {skill}.*?Assessment: (.*?)(?=Skill:|$)"
-                match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
+                skill_percentage, skill_analysis = self._extract_skill_info(response, skill)
 
-                if not match:
-                    skill_prompt = f"Analyze skill '{skill}' in 6 words based on:\n{cv_data}\n\nSkill: {skill_description}"
-                    skill_completion = client.chat.complete(
-                        model="mistral-large-latest",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are an expert HR analyst. Provide detailed skill analysis."
-                            },
-                            {
-                                "role": "user",
-                                "content": skill_prompt
-                            }
-                        ]
-                    )
-                    skill_analysis = skill_completion.choices[0].message.content
-                else:
-                    skill_analysis = match.group(1).strip()
-                
-                skill_pattern = f"Skill: {skill}.*?Match Percentage: (\d+)"
-                skill_match = re.search(skill_pattern, response, re.DOTALL | re.IGNORECASE)
-                skill_percentage = float(skill_match.group(1)) if skill_match else sections['skills_match']
                 
                 requirements.append(
                     RequirementMatch(
                         requirement=skill,
                         expectation=f"Required proficiency in {skill}",
                         candidateProfile=skill_description,
-                        matchPercentage=skill_percentage,
-                        comment=skill_analysis.strip()
+                        matchPercentage=skill_percentage or sections['skills_match'],
+                        comment=skill_analysis
+
                     )
                 )
 

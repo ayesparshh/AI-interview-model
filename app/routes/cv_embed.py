@@ -1,3 +1,4 @@
+import datetime
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
@@ -76,7 +77,6 @@ def extract_structured_resume_data(raw_resume: str) -> StructuredResumeData:
                 json_str = json_match.group(0)
                 data = json.loads(json_str)
                 
-                # Normalize the data structure
                 return StructuredResumeData(
                     experience=str(data.get("experience", "")) + " years",
                     skills=json.dumps(data.get("skills", [])),
@@ -157,18 +157,26 @@ async def process_resume(
         if not formatted_resume_text:
             raise ValueError("No valid text generated for embedding")
 
-        # Generate embeddings
         embedding_gen = EmbeddingGenerator("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")
         embeddings = embedding_gen.generate_embeddings([(formatted_resume_text, request.userId)])
         embedding_vector = embeddings.drop(['document_id', 'timestamp'], axis=1).values[0].tolist()
 
-        # Store in database
-        candidate = Candidate(
-            user_id=request.userId,
-            resume_text=formatted_resume_text,
-            embedding=embedding_vector
-        )
-        db.add(candidate)
+        existing_candidate = db.query(Candidate).filter(Candidate.user_id == request.userId).first()
+        
+        if existing_candidate:
+            existing_candidate.resume_text = formatted_resume_text
+            existing_candidate.embedding = embedding_vector
+            existing_candidate.created_at = datetime.datetime.now(datetime.timezone.utc)
+            logger.info(f"Updated existing candidate: {request.userId}")
+        else:
+            candidate = Candidate(
+                user_id=request.userId,
+                resume_text=formatted_resume_text,
+                embedding=embedding_vector
+            )
+            db.add(candidate)
+            logger.info(f"Created new candidate: {request.userId}")
+
         db.commit()
 
         return EmbeddingResponse(
