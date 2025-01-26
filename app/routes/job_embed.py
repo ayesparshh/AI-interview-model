@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 from pydoc import text
@@ -71,12 +72,23 @@ async def process_job_description(
         embeddings = embedding_gen.generate_embeddings([(formatted_job_text, request.jobId)])
         embedding_vector = embeddings.drop(['document_id', 'timestamp'], axis=1).values[0].tolist()
 
-        job = JobDescriptionDB(
-            job_id=request.jobId,
-            jd_text=formatted_job_text,
-            embedding=embedding_vector
-        )
-        db.add(job)
+        # Check if job already exists
+        existing_job = db.query(JobDescriptionDB).filter(JobDescriptionDB.job_id == request.jobId).first()
+        
+        if existing_job:
+            existing_job.jd_text = formatted_job_text
+            existing_job.embedding = embedding_vector
+            existing_job.created_at = datetime.datetime.now(datetime.timezone.utc)
+            logger.info(f"Updated existing job: {request.jobId}")
+        else:
+            job = JobDescriptionDB(
+                job_id=request.jobId,
+                jd_text=formatted_job_text,
+                embedding=embedding_vector
+            )
+            db.add(job)
+            logger.info(f"Created new job: {request.jobId}")
+
         db.commit()
 
         return EmbeddingResponseJob(
