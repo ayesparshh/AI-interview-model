@@ -1,9 +1,18 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import questions,cv_embed,job_match,answers
-from .routes import job_embed
+from .routes import questions, cv_embed, job_match, answers, job_embed
+import logging
 
-app = FastAPI()
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting application server")
+    yield
+    logger.info("Shutting down application server")
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,4 +30,5 @@ app.include_router(job_embed.router)
 
 if __name__ == "__main__":
     import uvicorn
+    logger.info("Starting development server")
     uvicorn.run(app, host="0.0.0.0", port=8000)
